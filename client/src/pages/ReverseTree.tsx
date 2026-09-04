@@ -115,11 +115,17 @@ function createTab(monster: Monster | null = null): MixTreeTab {
   };
 }
 
+/**
+ * 다른 페이지로 이동했다가 돌아와도 탭 구성이 유지되도록, 컴포넌트 바깥(모듈 스코프)에
+ * 마지막 상태를 저장해둡니다. 브라우저 탭을 완전히 닫거나 새로고침하면 초기화됩니다.
+ */
+let persistedMixTreeState: { tabs: MixTreeTab[]; activeTabId: string } | null = null;
+
 export default function ReverseTree() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [tabs, setTabs] = useState<MixTreeTab[]>(() => [createTab()]);
-  const [activeTabId, setActiveTabId] = useState(() => tabs[0]?.id ?? '');
+  const [tabs, setTabs] = useState<MixTreeTab[]>(() => persistedMixTreeState?.tabs ?? [createTab()]);
+  const [activeTabId, setActiveTabId] = useState(() => persistedMixTreeState?.activeTabId ?? tabs[0]?.id ?? '');
   const [detailMonster, setDetailMonster] = useState<Monster | null>(null);
   const [isDetailImageOpen, setIsDetailImageOpen] = useState(false);
   const monsters = useMonsterData();
@@ -130,6 +136,10 @@ export default function ReverseTree() {
   const activeTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? tabs[0], [tabs, activeTabId]);
   const selectedMonster = activeTab?.monster ?? null;
   const expandedNodes = activeTab?.expandedNodes ?? new Set<string>();
+
+  useEffect(() => {
+    persistedMixTreeState = { tabs, activeTabId };
+  }, [tabs, activeTabId]);
 
   useEffect(() => {
     const saved = localStorage.getItem('selectedMixTreeMonster');
