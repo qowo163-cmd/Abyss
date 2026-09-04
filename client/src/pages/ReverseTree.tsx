@@ -2,7 +2,7 @@ import { memo, useCallback, useDeferredValue, useEffect, useLayoutEffect, useMem
 import { Monster } from '@/types/monster';
 import { attributeImages } from '@/data/attributeImages';
 import { Input } from '@/components/ui/input';
-import { Search, GitBranch, ChevronDown, X, ZoomIn } from 'lucide-react';
+import { Search, GitBranch, ChevronDown, X, ZoomIn, Plus } from 'lucide-react';
 import { useMonsterData } from '@/hooks/useMonsterData';
 import { getRecipeEnchantLevel, getRecipeIngredients, normalizeRecipeName, resolveRecipeMonster } from '@/lib/recipeResolver';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -99,11 +99,27 @@ const TreeNodeCard = memo(function TreeNodeCard({
   );
 });
 
+const MAX_MIX_TREE_TABS = 7;
+
+interface MixTreeTab {
+  id: string;
+  monster: Monster | null;
+  expandedNodes: Set<string>;
+}
+
+function createTab(monster: Monster | null = null): MixTreeTab {
+  return {
+    id: `tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    monster,
+    expandedNodes: monster ? new Set([monster.id]) : new Set(),
+  };
+}
+
 export default function ReverseTree() {
   const [searchQuery, setSearchQuery] = useState('');
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
-  const [expandedNodes, setExpandedNodes] = useState<Set<string>>(new Set());
+  const [tabs, setTabs] = useState<MixTreeTab[]>(() => [createTab()]);
+  const [activeTabId, setActiveTabId] = useState(() => tabs[0]?.id ?? '');
   const [detailMonster, setDetailMonster] = useState<Monster | null>(null);
   const [isDetailImageOpen, setIsDetailImageOpen] = useState(false);
   const monsters = useMonsterData();
@@ -111,19 +127,62 @@ export default function ReverseTree() {
   const treeCanvasRef = useRef<HTMLElement | null>(null);
   const pendingScrollRestoreRef = useRef<{ windowX: number; windowY: number; canvasX: number; canvasY: number } | null>(null);
 
+  const activeTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? tabs[0], [tabs, activeTabId]);
+  const selectedMonster = activeTab?.monster ?? null;
+  const expandedNodes = activeTab?.expandedNodes ?? new Set<string>();
+
   useEffect(() => {
     const saved = localStorage.getItem('selectedMixTreeMonster');
     if (!saved) return;
     try {
       const monster = JSON.parse(saved) as Monster;
-      setSelectedMonster(monster);
-      setExpandedNodes(new Set([monster.id]));
+      setTabs((current) => current.map((tab, index) => (index === 0 ? { ...tab, monster, expandedNodes: new Set([monster.id]) } : tab)));
     } catch {
       // 손상된 이전 선택값은 무시하고 새 검색을 허용합니다.
     } finally {
       localStorage.removeItem('selectedMixTreeMonster');
     }
   }, []);
+
+  const switchTab = useCallback((tabId: string) => {
+    setActiveTabId(tabId);
+    setSearchQuery('');
+    setShowDropdown(false);
+    setDetailMonster(null);
+    setIsDetailImageOpen(false);
+  }, []);
+
+  const addTab = useCallback(() => {
+    setTabs((current) => {
+      if (current.length >= MAX_MIX_TREE_TABS) return current;
+      const newTab = createTab();
+      setActiveTabId(newTab.id);
+      return [...current, newTab];
+    });
+    setSearchQuery('');
+    setShowDropdown(false);
+    setDetailMonster(null);
+    setIsDetailImageOpen(false);
+  }, []);
+
+  const closeTab = useCallback((tabId: string) => {
+    setTabs((current) => {
+      const filtered = current.filter((tab) => tab.id !== tabId);
+      if (filtered.length === 0) {
+        const fresh = createTab();
+        setActiveTabId(fresh.id);
+        return [fresh];
+      }
+      if (tabId === activeTabId) {
+        setActiveTabId(filtered[filtered.length - 1].id);
+      }
+      return filtered;
+    });
+    setSearchQuery('');
+    setShowDropdown(false);
+    setDetailMonster(null);
+    setIsDetailImageOpen(false);
+  }, [activeTabId]);
 
   const searchResults = useMemo(() => {
     const query = deferredSearchQuery.trim().toLowerCase();
@@ -173,13 +232,14 @@ export default function ReverseTree() {
       canvasX: canvas?.scrollLeft ?? 0,
       canvasY: canvas?.scrollTop ?? 0,
     };
-    setExpandedNodes((current) => {
-      const next = new Set(current);
+    setTabs((current) => current.map((tab) => {
+      if (tab.id !== activeTabId) return tab;
+      const next = new Set(tab.expandedNodes);
       if (next.has(nodeId)) next.delete(nodeId);
       else next.add(nodeId);
-      return next;
-    });
-  }, []);
+      return { ...tab, expandedNodes: next };
+    }));
+  }, [activeTabId]);
 
   useLayoutEffect(() => {
     const snapshot = pendingScrollRestoreRef.current;
@@ -203,18 +263,16 @@ export default function ReverseTree() {
   }, [expandedNodes]);
 
   const handleSelectMonster = (monster: Monster) => {
-    setSelectedMonster(monster);
+    setTabs((current) => current.map((tab) => (tab.id === activeTabId ? { ...tab, monster, expandedNodes: new Set([monster.id]) } : tab)));
     setShowDropdown(false);
     setSearchQuery('');
-    setExpandedNodes(new Set([monster.id]));
     setDetailMonster(null);
     setIsDetailImageOpen(false);
   };
 
   const handleReset = () => {
-    setSelectedMonster(null);
+    setTabs((current) => current.map((tab) => (tab.id === activeTabId ? { ...tab, monster: null, expandedNodes: new Set() } : tab)));
     setSearchQuery('');
-    setExpandedNodes(new Set());
     setDetailMonster(null);
     setIsDetailImageOpen(false);
   };
@@ -227,6 +285,41 @@ export default function ReverseTree() {
           <p className="text-xs text-slate-400 sm:text-sm">특정 헨치를 만들기 위한 모든 하위 재료 트리를 단계별로 확인하세요.</p>
         </div>
       </header>
+
+      <div className="flex flex-shrink-0 items-end gap-1 overflow-x-auto border-b border-cyan-500/20 bg-slate-900/60 px-2 pt-2 sm:px-6">
+        {tabs.map((tab, index) => (
+          <div
+            key={tab.id}
+            role="tab"
+            aria-selected={tab.id === activeTabId}
+            onClick={() => switchTab(tab.id)}
+            className={`group flex max-w-[9rem] flex-shrink-0 cursor-pointer items-center gap-1.5 rounded-t-lg border border-b-0 px-3 py-2 text-xs font-medium transition-colors sm:max-w-[12rem] sm:text-sm ${tab.id === activeTabId ? 'border-cyan-400/60 bg-slate-800 text-cyan-200' : 'border-transparent text-slate-400 hover:bg-slate-800/40'}`}
+          >
+            <span className="truncate">{tab.monster ? tab.monster.name : `탭 ${index + 1}`}</span>
+            {tabs.length > 1 && (
+              <button
+                type="button"
+                onClick={(event) => { event.stopPropagation(); closeTab(tab.id); }}
+                aria-label={`${tab.monster ? tab.monster.name : `탭 ${index + 1}`} 닫기`}
+                className="flex-shrink-0 rounded p-0.5 text-slate-500 transition-colors hover:bg-slate-700 hover:text-slate-200"
+              >
+                <X className="h-3 w-3" />
+              </button>
+            )}
+          </div>
+        ))}
+        {tabs.length < MAX_MIX_TREE_TABS && (
+          <button
+            type="button"
+            onClick={addTab}
+            aria-label="믹스법 탭 추가"
+            className="mb-0.5 flex-shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-cyan-300"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
+        <span className="ml-auto flex-shrink-0 self-center pb-1 pl-2 text-[10px] text-slate-500 sm:text-xs">{tabs.length} / {MAX_MIX_TREE_TABS}</span>
+      </div>
 
       <div className="flex min-h-0 flex-1">
         <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-visible px-4 py-4 sm:gap-4 sm:overflow-hidden sm:px-6 sm:py-6">
