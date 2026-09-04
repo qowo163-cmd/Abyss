@@ -1,0 +1,876 @@
+@import "tailwindcss";
+@import "tw-animate-css";
+
+@custom-variant dark (&:is(.dark *));
+
+@theme inline {
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: calc(var(--radius) - 2px);
+  --radius-lg: var(--radius);
+  --radius-xl: calc(var(--radius) + 4px);
+  --color-background: var(--background);
+  --color-foreground: var(--foreground);
+  --color-card: var(--card);
+  --color-card-foreground: var(--card-foreground);
+  --color-popover: var(--popover);
+  --color-popover-foreground: var(--popover-foreground);
+  --color-primary: var(--primary);
+  --color-primary-foreground: var(--primary-foreground);
+  --color-secondary: var(--secondary);
+  --color-secondary-foreground: var(--secondary-foreground);
+  --color-muted: var(--muted);
+  --color-muted-foreground: var(--muted-foreground);
+  --color-accent: var(--accent);
+  --color-accent-foreground: var(--accent-foreground);
+  --color-destructive: var(--destructive);
+  --color-destructive-foreground: var(--destructive-foreground);
+  --color-border: var(--border);
+  --color-input: var(--input);
+  --color-ring: var(--ring);
+  --color-chart-1: var(--chart-1);
+  --color-chart-2: var(--chart-2);
+  --color-chart-3: var(--chart-3);
+  --color-chart-4: var(--chart-4);
+  --color-chart-5: var(--chart-5);
+  --color-sidebar: var(--sidebar);
+  --color-sidebar-foreground: var(--sidebar-foreground);
+  --color-sidebar-primary: var(--sidebar-primary);
+  --color-sidebar-primary-foreground: var(--sidebar-primary-foreground);
+  --color-sidebar-accent: var(--sidebar-accent);
+  --color-sidebar-accent-foreground: var(--sidebar-accent-foreground);
+  --color-sidebar-border: var(--sidebar-border);
+  --color-sidebar-ring: var(--sidebar-ring);
+}
+
+:root {
+  --primary: #00d4ff;
+  --primary-foreground: #0a0e27;
+  --sidebar-primary: #00d4ff;
+  --sidebar-primary-foreground: #0a0e27;
+  --chart-1: #ff006e;
+  --chart-2: #00d4ff;
+  --chart-3: #8338ec;
+  --chart-4: #ffbe0b;
+  --chart-5: #fb5607;
+  --radius: 0.75rem;
+  --background: #0a0e27;
+  --foreground: #e0e0e0;
+  --card: #1a1f3a;
+  --card-foreground: #e0e0e0;
+  --popover: #1a1f3a;
+  --popover-foreground: #e0e0e0;
+  --secondary: #2a2f4a;
+  --secondary-foreground: #a0a0b0;
+  --muted: #2a2f4a;
+  --muted-foreground: #808090;
+  --accent: #00d4ff;
+  --accent-foreground: #0a0e27;
+  --destructive: #ff006e;
+  --destructive-foreground: #fff;
+  --border: #2a2f4a;
+  --input: #1a1f3a;
+  --ring: #00d4ff;
+  --sidebar: #0f1229;
+  --sidebar-foreground: #e0e0e0;
+  --sidebar-accent: #00d4ff;
+  --sidebar-accent-foreground: #0a0e27;
+  --sidebar-border: #2a2f4a;
+  --sidebar-ring: #00d4ff;
+}
+
+.dark {
+  --primary: #00d4ff;
+  --primary-foreground: #0a0e27;
+  --sidebar-primary: #00d4ff;
+  --sidebar-primary-foreground: #0a0e27;
+  --background: #0a0e27;
+  --foreground: #e0e0e0;
+  --card: #1a1f3a;
+  --card-foreground: #e0e0e0;
+  --popover: #1a1f3a;
+  --popover-foreground: #e0e0e0;
+  --secondary: #2a2f4a;
+  --secondary-foreground: #a0a0b0;
+  --muted: #2a2f4a;
+  --muted-foreground: #808090;
+  --accent: #00d4ff;
+  --accent-foreground: #0a0e27;
+  --destructive: #ff006e;
+  --destructive-foreground: #fff;
+  --border: #2a2f4a;
+  --input: #1a1f3a;
+  --ring: #00d4ff;
+  --chart-1: #ff006e;
+  --chart-2: #00d4ff;
+  --chart-3: #8338ec;
+  --chart-4: #ffbe0b;
+  --chart-5: #fb5607;
+  --sidebar: #0f1229;
+  --sidebar-foreground: #e0e0e0;
+  --sidebar-accent: #00d4ff;
+  --sidebar-accent-foreground: #0a0e27;
+  --sidebar-border: #2a2f4a;
+  --sidebar-ring: #00d4ff;
+}
+
+:root,
+.dark {
+  --primary: #2586d9;
+  --primary-foreground: #f8fcff;
+  --sidebar-primary: #2586d9;
+  --sidebar-primary-foreground: #f8fcff;
+  --background: #e8f7ff;
+  --foreground: #17324d;
+  --card: #f8fdff;
+  --card-foreground: #17324d;
+  --popover: #f8fdff;
+  --popover-foreground: #17324d;
+  --secondary: #d8efff;
+  --secondary-foreground: #45627b;
+  --muted: #e2f3ff;
+  --muted-foreground: #58738a;
+  --accent: #2586d9;
+  --accent-foreground: #f8fcff;
+  --destructive: #e45878;
+  --border: #b9def5;
+  --input: #f8fdff;
+  --ring: #2586d9;
+  --chart-1: #8b5cf6;
+  --chart-2: #38bdf8;
+  --chart-3: #f59e0b;
+  --chart-4: #fb7185;
+  --chart-5: #34d399;
+  --sidebar: #eefaff;
+  --sidebar-foreground: #17324d;
+  --sidebar-accent: #2586d9;
+  --sidebar-accent-foreground: #f8fcff;
+  --sidebar-border: #b9def5;
+  --sidebar-ring: #2586d9;
+}
+
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    background-color: #d8efff;
+    background-image:
+      linear-gradient(180deg, rgba(226, 246, 255, 0.14), rgba(6, 40, 76, 0.18)),
+      url("/manus-storage/abyss-sky-fantasy-background_edc5ee2b.png");
+    background-position: center top;
+    background-size: cover;
+    background-attachment: fixed;
+  }
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  [type="button"]:not(:disabled),
+  [type="submit"]:not(:disabled),
+  [type="reset"]:not(:disabled),
+  a[href],
+  select:not(:disabled),
+  input[type="checkbox"]:not(:disabled),
+  input[type="radio"]:not(:disabled) {
+    @apply cursor-pointer;
+  }
+}
+
+/* 밝은 판타지 하늘 배경 위에서도 기존 게임 데이터 화면의 대비를 유지합니다. */
+.abyss-fantasy-shell {
+  background: linear-gradient(180deg, rgba(219, 242, 255, 0.14), rgba(30, 102, 151, 0.08));
+}
+
+.abyss-fantasy-shell > main {
+  background:
+    radial-gradient(circle at 94% 8%, rgba(176, 222, 255, 0.42), transparent 27%),
+    linear-gradient(180deg, rgba(238, 250, 255, 0.92), rgba(216, 240, 255, 0.86));
+}
+
+.abyss-fantasy-shell > main > :where(.min-h-screen) {
+  background-color: transparent !important;
+  background-image: none !important;
+}
+
+.abyss-fantasy-page {
+  background-image:
+    radial-gradient(circle at 10% 5%, rgba(205, 242, 255, 0.16), transparent 27%),
+    linear-gradient(180deg, rgba(4, 32, 62, 0.18), rgba(5, 27, 56, 0.3));
+}
+
+.abyss-fantasy-shell :where(input, select, textarea) {
+  border-color: rgba(186, 222, 246, 0.9);
+  box-shadow: 0 8px 18px rgba(40, 112, 166, 0.08);
+}
+
+.abyss-casual-card {
+  border-color: rgba(194, 231, 255, 0.4);
+  border-radius: 1.5rem;
+  box-shadow: 0 18px 40px rgba(20, 78, 130, 0.2);
+}
+
+/* 게임 데이터 카드는 참고 이미지처럼 연한 하늘 배경 위의 밝은 카드 표면으로 통일합니다. */
+.abyss-dim-card {
+  border-color: rgba(112, 205, 235, 0.58) !important;
+  background: linear-gradient(145deg, rgba(255, 255, 255, 0.97), rgba(239, 251, 255, 0.93)) !important;
+  box-shadow: 0 14px 30px rgba(62, 145, 187, 0.16) !important;
+  color: #153d56;
+}
+
+.abyss-dim-card-media {
+  background: linear-gradient(145deg, rgba(220, 247, 255, 0.95), rgba(181, 232, 250, 0.82)) !important;
+}
+
+.abyss-mixbook-canvas {
+  border-color: rgba(119, 206, 237, 0.48) !important;
+  background: linear-gradient(145deg, rgba(193, 234, 250, 0.66), rgba(227, 247, 255, 0.55)) !important;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 18px 38px rgba(66, 149, 191, 0.12) !important;
+}
+
+/* 밝은 헨치 카드·상세 카드에서 득코 가능 여부를 즉시 구분할 수 있도록 진한 녹색 표기를 사용합니다. */
+.abyss-acquired-label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid #15803d !important;
+  border-radius: 0.5rem;
+  background: #dcfce7 !important;
+  color: #14532d !important;
+  box-shadow: 0 3px 8px rgba(21, 128, 61, 0.14);
+}
+
+.abyss-acquired-label-text {
+  color: #166534 !important;
+  font-weight: 800;
+}
+
+.abyss-detail-acquired-label {
+  border: 1px solid #166534 !important;
+  background: linear-gradient(135deg, #166534, #15803d) !important;
+  color: #f0fdf4 !important;
+  box-shadow: 0 6px 14px rgba(21, 128, 61, 0.28);
+}
+
+.abyss-detail-acquired-label :where(p, span) {
+  color: #f0fdf4 !important;
+  font-weight: 800;
+}
+
+.abyss-x-data-badge {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid #6d28d9 !important;
+  border-radius: 0.5rem;
+  background: linear-gradient(135deg, #ede9fe, #ddd6fe) !important;
+  color: #4c1d95 !important;
+  box-shadow: 0 4px 10px rgba(109, 40, 217, 0.18);
+  font-weight: 800;
+}
+
+.abyss-unacquired-label {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border: 1px solid #b91c1c !important;
+  border-radius: 0.5rem;
+  background: #fee2e2 !important;
+  color: #7f1d1d !important;
+  box-shadow: 0 3px 8px rgba(185, 28, 28, 0.14);
+}
+
+/* 상세 카드의 나머지 외형은 밝게 유지하고, 믹스 공식 정보만 진한 하늘색으로 분리합니다. */
+.abyss-mix-formula {
+  border-color: rgba(37, 134, 188, 0.72) !important;
+  background: linear-gradient(145deg, #c7ecfa, #e0f6ff) !important;
+  box-shadow: 0 10px 22px rgba(32, 121, 166, 0.16) !important;
+}
+
+.abyss-mix-formula :where(.text-white, [class*="text-slate-"]) {
+  color: #173f59 !important;
+}
+
+.abyss-mix-formula :where([class*="text-cyan-"]) {
+  color: #075d83 !important;
+}
+
+.abyss-mix-formula .abyss-mix-formula-row {
+  border-color: rgba(73, 159, 202, 0.68) !important;
+  background: rgba(255, 255, 255, 0.92) !important;
+}
+
+.abyss-mix-formula :where(button[class*="bg-purple-"]) {
+  border-color: #7e4bb4 !important;
+  background: #eee2ff !important;
+  color: #51258a !important;
+}
+
+.abyss-mix-formula :where(button[class*="bg-blue-"]) {
+  border-color: #167cb1 !important;
+  background: #d8f2ff !important;
+  color: #075a84 !important;
+}
+
+.abyss-mix-formula :where(span[class*="bg-cyan-"]) {
+  border-color: #08759b !important;
+  background: #c8f1ff !important;
+  color: #07506f !important;
+}
+
+/* 헨치 상세 모달은 이미지·재료 정보가 많아 한 단계 진한 표면과 밝은 글자로 별도 대비를 제공합니다. */
+.abyss-detail-card {
+  border-color: rgba(118, 213, 247, 0.78) !important;
+  background: linear-gradient(145deg, #0c3558 0%, #15557c 58%, #1d658d 100%) !important;
+  box-shadow: 0 24px 54px rgba(2, 34, 61, 0.42) !important;
+  color: #f1fbff;
+}
+
+.abyss-detail-card .abyss-dim-card,
+.abyss-detail-card .abyss-dim-card-media {
+  border-color: rgba(143, 224, 250, 0.58) !important;
+  background: linear-gradient(145deg, rgba(8, 48, 79, 0.92), rgba(22, 83, 119, 0.86)) !important;
+  box-shadow: inset 0 1px 0 rgba(191, 242, 255, 0.08) !important;
+}
+
+.abyss-detail-card :where(.text-white, [class*="text-slate-"]) {
+  color: #ecfaff !important;
+}
+
+.abyss-detail-card :where([class*="text-cyan-"]) {
+  color: #9aeaff !important;
+}
+
+.abyss-detail-card :where([class*="text-violet-"]) {
+  color: #ebd8ff !important;
+}
+
+.abyss-detail-card :where([class*="text-green-"]) {
+  color: #a7f3d0 !important;
+}
+
+.abyss-detail-card :where([class*="text-amber-"]) {
+  color: #ffe79a !important;
+}
+
+.abyss-detail-card :where([class*="text-orange-"]) {
+  color: #ffd0a5 !important;
+}
+
+.abyss-detail-card :where(button[class*="bg-purple-"]) {
+  border-color: rgba(216, 183, 255, 0.74) !important;
+  background-color: rgba(104, 56, 166, 0.7) !important;
+  color: #f8f1ff !important;
+}
+
+.abyss-detail-card :where(button[class*="bg-blue-"]) {
+  border-color: rgba(137, 220, 255, 0.74) !important;
+  background-color: rgba(14, 111, 163, 0.74) !important;
+  color: #eefaff !important;
+}
+
+.abyss-detail-card :where(span[class*="bg-cyan-"]) {
+  border-color: rgba(120, 229, 255, 0.74) !important;
+  background-color: rgba(6, 116, 148, 0.74) !important;
+  color: #edfbff !important;
+}
+
+.abyss-dim-card :where(.text-white, [class*="text-slate-"]) {
+  color: #244b63 !important;
+}
+
+.abyss-dim-card :where([class*="text-cyan-"]) {
+  color: #097eaa !important;
+}
+
+.abyss-dim-card :where([class*="text-violet-"]) {
+  color: #6649ab !important;
+}
+
+.abyss-dim-card :where([class*="text-amber-"]) {
+  color: #946006 !important;
+}
+
+.abyss-dim-card :where([class*="border-slate-"], [class*="border-white/"]) {
+  border-color: rgba(114, 205, 235, 0.32) !important;
+}
+
+/* 이전 다크 화면의 카드·입력·보조 글자를 밝은 판타지 표면과 고대비 글자로 통일합니다. */
+.abyss-fantasy-shell > main :where([class*="bg-slate-"], [class*="bg-white/"]) {
+  background-color: rgba(249, 254, 255, 0.9) !important;
+  box-shadow: 0 12px 30px rgba(38, 107, 157, 0.1);
+}
+
+.abyss-fantasy-shell > main :where([class*="from-slate-"], [class*="via-slate-"], [class*="to-slate-"]) {
+  --tw-gradient-from: rgba(249, 254, 255, 0.98) var(--tw-gradient-from-position) !important;
+  --tw-gradient-via: rgba(237, 248, 255, 0.94) var(--tw-gradient-via-position) !important;
+  --tw-gradient-to: rgba(219, 240, 255, 0.9) var(--tw-gradient-to-position) !important;
+}
+
+.abyss-fantasy-shell > main :where([class*="border-slate-"], [class*="border-white/"]) {
+  border-color: rgba(154, 207, 241, 0.82) !important;
+}
+
+.abyss-fantasy-shell > main :where(.text-white, [class*="text-slate-"]) {
+  color: #1d405b !important;
+}
+
+.abyss-fantasy-shell > main :where([class*="text-cyan-"]) {
+  color: #0871aa !important;
+}
+
+.abyss-fantasy-shell > main :where([class*="text-violet-"]) {
+  color: #6541af !important;
+}
+
+.abyss-fantasy-shell > main :where([class*="text-amber-"]) {
+  color: #9a5b07 !important;
+}
+
+.abyss-fantasy-shell > main :where([class*="text-emerald-"]) {
+  color: #0c7a58 !important;
+}
+
+/* 좁은 모바일 화면에서 버튼·탭의 한글이 한 글자씩 세로로 꺾이지 않도록 가로 읽기성을 유지합니다. */
+@media (max-width: 767px) {
+  .abyss-fantasy-shell > main button,
+  .abyss-fantasy-shell > main [role="tab"] {
+    word-break: keep-all;
+    overflow-wrap: normal;
+  }
+}
+
+/* 전역 테마 규칙보다 우선하여 밝은 데이터 카드 안의 정보 대비를 유지합니다. */
+.abyss-fantasy-shell > main .abyss-dim-card :where(.text-white, [class*="text-slate-"]) {
+  color: #244b63 !important;
+}
+
+.abyss-fantasy-shell > main .abyss-dim-card :where([class*="text-cyan-"]) {
+  color: #097eaa !important;
+}
+
+.abyss-fantasy-shell > main .abyss-dim-card :where([class*="text-violet-"]) {
+  color: #6649ab !important;
+}
+
+.abyss-fantasy-shell > main .abyss-dim-card :where([class*="text-amber-"]) {
+  color: #946006 !important;
+}
+
+.abyss-fantasy-shell > main .abyss-dim-card :where([class*="border-slate-"], [class*="border-white/"]) {
+  border-color: rgba(114, 205, 235, 0.32) !important;
+}
+
+/* 관리자 화면은 데이터 밀도가 높으므로 일반 페이지보다 진한 네이비·청록 대비를 사용합니다. */
+.abyss-admin-page {
+  background: linear-gradient(180deg, rgba(224, 246, 255, 0.8), rgba(202, 236, 252, 0.7));
+}
+
+.abyss-fantasy-shell > main .abyss-admin-page :where([class*="bg-slate-"], [class*="bg-white/"]) {
+  background-color: rgba(238, 249, 255, 0.96) !important;
+  box-shadow: 0 12px 28px rgba(27, 105, 151, 0.12);
+}
+
+.abyss-fantasy-shell > main .abyss-admin-page :where([class*="text-slate-"]) {
+  color: #1d4866 !important;
+}
+
+.abyss-fantasy-shell > main .abyss-admin-page :where([class*="text-cyan-"]) {
+  color: #056c99 !important;
+}
+
+.abyss-fantasy-shell > main .abyss-admin-page :where([class*="text-violet-"]) {
+  color: #563d9f !important;
+}
+
+.abyss-fantasy-shell > main .abyss-admin-page :where([class*="border-slate-"], [class*="border-white/"]) {
+  border-color: rgba(96, 181, 222, 0.7) !important;
+}
+
+.abyss-admin-page [role="tab"] {
+  color: #1c587b !important;
+  font-weight: 700;
+}
+
+.abyss-admin-page [role="tab"][data-state="active"] {
+  background: linear-gradient(135deg, #d6f4ff, #e9e0ff) !important;
+  color: #123c59 !important;
+  box-shadow: 0 6px 14px rgba(42, 125, 172, 0.2);
+}
+
+.abyss-admin-page :where(input, select, textarea) {
+  background-color: rgba(255, 255, 255, 0.94) !important;
+  color: #163e5a !important;
+  border-color: rgba(90, 174, 216, 0.78) !important;
+}
+
+/* 관리자 색상 상태 영역은 밝은 배경에서도 즉시 구분되도록 고채도 팔레트를 사용합니다. */
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="text-cyan-"]) { color: #075985 !important; }
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="text-blue-"]) { color: #1d4ed8 !important; }
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="text-violet-"], [class*="text-purple-"]) { color: #5b21b6 !important; }
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="text-green-"], [class*="text-emerald-"]) { color: #166534 !important; }
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="text-red-"], [class*="text-rose-"]) { color: #991b1b !important; }
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="text-amber-"], [class*="text-orange-"], [class*="text-yellow-"]) { color: #92400e !important; }
+
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="bg-cyan-"]) {
+  background: linear-gradient(135deg, #0e7490, #155e75) !important;
+  border-color: #0c4a6e !important;
+  color: #ecfeff !important;
+  box-shadow: 0 5px 12px rgba(14, 116, 144, 0.28);
+}
+
+/* 요청에 따라 사이트 전체의 유리·배경 흐림 효과를 제거하고 원래의 색상 대비만 유지합니다. */
+[class*="backdrop-blur"] {
+  -webkit-backdrop-filter: none !important;
+  backdrop-filter: none !important;
+}
+
+[class*="blur-"]:not([class*="backdrop-blur"]) {
+  filter: none !important;
+}
+
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="bg-blue-"]) {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8) !important;
+  border-color: #1e40af !important;
+  color: #eff6ff !important;
+  box-shadow: 0 5px 12px rgba(37, 99, 235, 0.28);
+}
+
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="bg-violet-"], [class*="bg-purple-"]) {
+  background: linear-gradient(135deg, #7c3aed, #5b21b6) !important;
+  border-color: #4c1d95 !important;
+  color: #f5f3ff !important;
+  box-shadow: 0 5px 12px rgba(109, 40, 217, 0.28);
+}
+
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="bg-green-"], [class*="bg-emerald-"]) {
+  background: linear-gradient(135deg, #15803d, #166534) !important;
+  border-color: #14532d !important;
+  color: #f0fdf4 !important;
+  box-shadow: 0 5px 12px rgba(21, 128, 61, 0.28);
+}
+
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="bg-red-"], [class*="bg-rose-"]) {
+  background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+  border-color: #7f1d1d !important;
+  color: #fff1f2 !important;
+  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.25);
+}
+
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="bg-amber-"], [class*="bg-orange-"], [class*="bg-yellow-"]) {
+  background: linear-gradient(135deg, #d97706, #b45309) !important;
+  border-color: #92400e !important;
+  color: #fffbeb !important;
+  box-shadow: 0 5px 12px rgba(217, 119, 6, 0.25);
+}
+
+.abyss-fantasy-shell > main .abyss-admin-high-contrast :where([class*="bg-cyan-"], [class*="bg-blue-"], [class*="bg-violet-"], [class*="bg-purple-"], [class*="bg-green-"], [class*="bg-emerald-"], [class*="bg-red-"], [class*="bg-rose-"], [class*="bg-amber-"], [class*="bg-orange-"], [class*="bg-yellow-"]) :where([class*="text-"]) {
+  color: inherit !important;
+}
+
+.abyss-admin-high-contrast [role="tab"] {
+  background: #e0f2fe !important;
+  border: 1px solid #0e7490 !important;
+  color: #0c4a6e !important;
+}
+
+.abyss-admin-high-contrast [role="tab"][data-state="active"] {
+  background: linear-gradient(135deg, #0e7490, #155e75) !important;
+  border-color: #083344 !important;
+  color: #ecfeff !important;
+  box-shadow: 0 5px 12px rgba(14, 116, 144, 0.32);
+}
+
+.abyss-admin-high-contrast [role="switch"] {
+  border: 2px solid #0e7490 !important;
+  background-color: #cbd5e1 !important;
+}
+
+.abyss-admin-high-contrast [role="switch"][data-state="checked"] {
+  background-color: #15803d !important;
+  border-color: #14532d !important;
+}
+
+.abyss-danger-action {
+  border: 1px solid #7f1d1d !important;
+  background: linear-gradient(135deg, #dc2626, #991b1b) !important;
+  color: #fff1f2 !important;
+  box-shadow: 0 5px 12px rgba(220, 38, 38, 0.28);
+}
+
+.abyss-danger-action:hover:not(:disabled) {
+  background: linear-gradient(135deg, #ef4444, #b91c1c) !important;
+  color: #fff !important;
+}
+
+.abyss-hero .abyss-guide-status-badge {
+  border-color: #0e7490 !important;
+  background: linear-gradient(135deg, rgba(8, 145, 178, 0.84), rgba(14, 116, 144, 0.88)) !important;
+  color: #ecfeff !important;
+  box-shadow: 0 6px 16px rgba(6, 78, 112, 0.38);
+  text-shadow: 0 1px 5px rgba(3, 33, 49, 0.6);
+}
+
+.abyss-hero .abyss-guide-status-badge > span {
+  background: #a5f3fc !important;
+  box-shadow: 0 0 12px rgba(165, 243, 252, 0.95) !important;
+}
+
+/* 홈 히어로는 의도적으로 깊은 배경을 유지하므로 밝은 글자 대비를 별도로 보존합니다. */
+.abyss-hero :where(.text-white) {
+  color: #fff !important;
+}
+
+.abyss-hero :where([class*="text-slate-"]) {
+  color: #d8e8f4 !important;
+}
+
+.abyss-hero :where([class*="text-cyan-"]) {
+  color: #c9f5ff !important;
+}
+
+.abyss-hero :where([class*="text-violet-"]) {
+  color: #e3d8ff !important;
+}
+
+.abyss-hero :where([class*="text-amber-"]) {
+  color: #fff0b8 !important;
+}
+
+.abyss-hero .text-slate-950 {
+  color: #102f46 !important;
+}
+
+.abyss-fantasy-shell > main .abyss-hero .abyss-hero-copy {
+  border: 1px solid rgba(213, 244, 255, 0.22);
+  border-radius: 2rem;
+  background: linear-gradient(105deg, rgba(3, 19, 42, 0.72) 0%, rgba(8, 42, 73, 0.58) 62%, rgba(16, 61, 98, 0.2) 100%);
+  box-shadow: 0 20px 48px rgba(2, 21, 48, 0.24);
+  padding: 1.25rem;
+}
+
+.abyss-fantasy-shell > main .abyss-hero .abyss-hero-copy h1 {
+  text-shadow: 0 3px 18px rgba(0, 11, 30, 0.72);
+}
+
+.abyss-fantasy-shell > main .abyss-hero .abyss-hero-title-primary {
+  color: #f8fdff !important;
+  text-shadow: 0 3px 0 rgba(1, 16, 38, 0.5), 0 10px 26px rgba(0, 12, 34, 0.78);
+}
+
+.abyss-fantasy-shell > main .abyss-hero .abyss-hero-title-highlight {
+  background-image: linear-gradient(100deg, #b8f5ff 0%, #8eeaff 42%, #d7b9ff 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent !important;
+  text-shadow: 0 4px 20px rgba(0, 13, 39, 0.62);
+}
+
+.abyss-fantasy-shell > main .abyss-hero .abyss-hero-copy > p {
+  color: #dff4ff !important;
+  text-shadow: 0 2px 12px rgba(0, 15, 36, 0.8);
+}
+
+.abyss-fantasy-shell > main .abyss-hero .abyss-hero-copy a[href] {
+  box-shadow: 0 10px 24px rgba(0, 16, 40, 0.34);
+}
+
+@media (min-width: 640px) {
+  .abyss-fantasy-shell > main .abyss-hero .abyss-hero-copy {
+    padding: 1.75rem;
+  }
+}
+
+/* 접속자 카드는 관리자 공통 색상 규칙의 영향을 받지 않도록 전용 고대비 색을 고정합니다. */
+.abyss-fantasy-shell > main .abyss-admin-page .abyss-active-members-panel {
+  border-color: #86efac !important;
+  background: linear-gradient(110deg, #064e2b, #08733f 54%, #065f35) !important;
+  box-shadow: 0 14px 28px rgba(6, 78, 43, 0.28) !important;
+  color: #f0fdf4 !important;
+}
+
+.abyss-active-members-heading,
+.abyss-active-members-list-label {
+  color: #ffffff !important;
+  text-shadow: 0 1px 2px rgba(2, 44, 24, 0.72);
+}
+
+.abyss-active-members-help {
+  color: #d1fae5 !important;
+  font-weight: 700;
+  text-shadow: 0 1px 2px rgba(2, 44, 24, 0.66);
+}
+
+.abyss-active-members-live {
+  border-color: #bbf7d0 !important;
+  background: #064e3b !important;
+  color: #f0fdf4 !important;
+  box-shadow: 0 4px 10px rgba(2, 44, 34, 0.42);
+}
+
+.abyss-active-member-chip {
+  border-color: #d1fae5 !important;
+  background: #052e1a !important;
+  color: #ffffff !important;
+  box-shadow: 0 3px 8px rgba(2, 44, 24, 0.42) !important;
+}
+
+.abyss-active-member-chip-id {
+  color: #a7f3d0 !important;
+}
+
+.abyss-online-radar {
+  isolation: isolate;
+  overflow: hidden;
+  border: 2px solid #bbf7d0;
+  background: #022c22;
+  box-shadow: 0 0 0 3px rgba(187, 247, 208, 0.18), 0 0 16px rgba(110, 231, 183, 0.72);
+}
+
+.abyss-online-radar::before {
+  position: absolute;
+  inset: 2px;
+  z-index: -1;
+  border-radius: inherit;
+  background: conic-gradient(from 208deg, transparent 0deg 234deg, rgba(167, 243, 208, 0.94) 300deg, rgba(52, 211, 153, 0.16) 360deg);
+  content: "";
+  animation: abyss-online-radar-sweep 2.6s linear infinite;
+}
+
+.abyss-online-radar::after {
+  position: absolute;
+  inset: 6px;
+  z-index: -1;
+  border: 1px solid rgba(209, 250, 229, 0.55);
+  border-radius: 50%;
+  box-shadow: 0 0 0 6px rgba(110, 231, 183, 0.1);
+  content: "";
+}
+
+.abyss-online-radar-dot {
+  background: #d1fae5;
+  box-shadow: 0 0 10px #6ee7b7;
+}
+
+@keyframes abyss-online-radar-sweep {
+  to { transform: rotate(1turn); }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .abyss-online-radar::before { animation: none; }
+}
+
+@layer components {
+  /**
+   * Custom container utility that centers content and adds responsive padding.
+   *
+   * This overrides Tailwind's default container behavior to:
+   * - Auto-center content (mx-auto)
+   * - Add responsive horizontal padding
+   * - Set max-width for large screens
+   *
+   * Usage: <div className="container">...</div>
+   *
+   * For custom widths, use max-w-* utilities directly:
+   * <div className="max-w-6xl mx-auto px-4">...</div>
+   */
+  .container {
+    width: 100%;
+    margin-left: auto;
+    margin-right: auto;
+    padding-left: 1rem; /* 16px - mobile padding */
+    padding-right: 1rem;
+  }
+
+  .flex {
+    min-height: 0;
+    min-width: 0;
+  }
+
+  @media (min-width: 640px) {
+    .container {
+      padding-left: 1.5rem; /* 24px - tablet padding */
+      padding-right: 1.5rem;
+    }
+  }
+
+  @media (min-width: 1024px) {
+    .container {
+      padding-left: 2rem; /* 32px - desktop padding */
+      padding-right: 2rem;
+      max-width: 1280px; /* Standard content width */
+    }
+  }
+}
+
+/* 모바일 최적화 */
+@media (max-width: 768px) {
+  /* 터치 타겟 최소 크기 44px */
+  button, a, input[type="checkbox"], input[type="radio"] {
+    min-height: 44px;
+    min-width: 44px;
+  }
+
+  /* 모바일에서 더 큰 텍스트 */
+  body {
+    font-size: 16px;
+  }
+
+  /* 모바일 스크롤 부드럽게 */
+  * {
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  /* 모바일 input 줌 방지 */
+  input, textarea, select {
+    font-size: 16px;
+  }
+
+  /* 모바일 스크롤바 숨기기 */
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+}
+
+/* 데스크톱 최적화 */
+@media (min-width: 769px) {
+  /* 데스크톱에서 더 나은 호버 효과 */
+  @supports (cursor: pointer) {
+    button:hover,
+    a:hover {
+      cursor: pointer;
+    }
+  }
+}
+
+
+/* Anti-capture & anti-selection protection for public pages */
+body:not(.allow-select) {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+}
+
+input, textarea {
+  -webkit-user-select: text !important;
+  -moz-user-select: text !important;
+  -ms-user-select: text !important;
+  user-select: text !important;
+}
+
+
+body:not(.allow-select) img {
+  -webkit-user-drag: none;
+  user-drag: none;
+  -webkit-touch-callout: none;
+}
+
+@media print {
+  body:not(.allow-select) {
+    filter: blur(16px) !important;
+    pointer-events: none !important;
+  }
+}
