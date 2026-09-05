@@ -9,6 +9,7 @@ export type MarketplaceHistoryRecordKind = "listing" | "request";
 
 export interface MarketplaceHistoryEntry {
   id: string;
+  rawId: string;
   recordKind: MarketplaceHistoryRecordKind;
   category: Exclude<MarketplaceHistoryCategory, "all">;
   listingType: MarketplaceHistoryType;
@@ -87,6 +88,7 @@ function historyFrom(row: Row): MarketplaceHistoryEntry {
   const priceCurrency = oneOf(row.priceCurrency, ["boxes", "gp", "exchange"] as const, "boxes");
   return {
     id: `${category}-${recordKind}-${listingType}-${String(row.id)}`,
+    rawId: String(row.id),
     recordKind,
     category,
     listingType,
@@ -165,4 +167,36 @@ export async function listMarketplaceHistory(filters: MarketplaceHistoryFilters 
     LIMIT ?`, params);
 
   return rows(result).map(historyFrom);
+}
+
+// 각 (구분·기록종류·방식) 조합이 실제로 어느 DB 테이블에 저장되는지 연결해둔 표입니다.
+// listMarketplaceHistory의 UNION 쿼리 구조와 정확히 같은 매핑이어야 해요.
+const HISTORY_TABLE_MAP: Record<string, string> = {
+  "hench-listing-sell": "marketplace_listings",
+  "hench-request-sell": "marketplace_trade_requests",
+  "hench-listing-buy": "marketplace_buy_orders",
+  "hench-request-buy": "marketplace_sale_offers",
+  "hench-listing-exchange": "marketplace_exchange_listings",
+  "hench-request-exchange": "marketplace_exchange_offers",
+  "item-listing-sell": "marketplace_item_listings",
+  "item-listing-buy": "marketplace_item_listings",
+  "item-listing-exchange": "marketplace_item_listings",
+  "item-request-sell": "marketplace_item_requests",
+  "item-request-buy": "marketplace_item_requests",
+  "item-request-exchange": "marketplace_item_requests",
+};
+
+export async function deleteMarketplaceHistoryRecord(category: unknown, recordKind: unknown, listingType: unknown, rawId: unknown) {
+  const safeCategory = oneOf(category, ["hench", "item"] as const, "hench");
+  const safeRecordKind = oneOf(recordKind, ["listing", "request"] as const, "listing");
+  const safeListingType = oneOf(listingType, ["sell", "buy", "exchange"] as const, "sell");
+  const id = typeof rawId === "string" ? rawId.trim() : "";
+  if (!id) throw new MemberAuthError("INVALID_INPUT", "삭제할 거래 기록을 찾을 수 없습니다.");
+
+  const table = HISTORY_TABLE_MAP[`${safeCategory}-${safeRecordKind}-${safeListingType}`];
+  if (!table) throw new MemberAuthError("INVALID_INPUT", "삭제할 수 없는 거래 기록 종류입니다.");
+
+  const result = await db().query(`DELETE FROM ${table} WHERE id = ? LIMIT 1`, [id]);
+  const affectedRows = Array.isArray(result) ? (result[0] as { affectedRows?: number })?.affectedRows ?? 0 : 0;
+  if (!affectedRows) throw new MemberAuthError("INVALID_INPUT", "이미 삭제되었거나 존재하지 않는 거래 기록입니다.");
 }

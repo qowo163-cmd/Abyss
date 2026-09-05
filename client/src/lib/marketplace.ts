@@ -322,6 +322,7 @@ export type MarketplaceHistoryType = "all" | "sell" | "buy" | "exchange";
 export type MarketplaceHistoryStatus = "all" | MarketplaceItemListingStatus | "pending" | "accepted" | "rejected";
 export interface MarketplaceHistoryEntry {
   id: string;
+  rawId: string;
   recordKind: "listing" | "request";
   category: Exclude<MarketplaceHistoryCategory, "all">;
   listingType: Exclude<MarketplaceHistoryType, "all">;
@@ -355,4 +356,8 @@ export function getAdminMarketplaceHistory(filters: MarketplaceHistoryFilters = 
   if (filters.days && filters.days !== "all") params.set("days", filters.days);
   params.set("limit", String(filters.limit || 200));
   return marketplaceFetch<{ records: MarketplaceHistoryEntry[] }>(`/api/marketplace/admin/history?${params.toString()}`);
+}
+export function deleteAdminMarketplaceHistoryRecord(record: Pick<MarketplaceHistoryEntry, "rawId" | "category" | "recordKind" | "listingType">) {
+  const params = new URLSearchParams({ category: record.category, recordKind: record.recordKind, listingType: record.listingType });
+  return marketplaceFetch<{ success: true }>(`/api/marketplace/admin/history/${record.rawId}?${params.toString()}`, { method: "DELETE" });
 }

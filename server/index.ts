@@ -33,7 +33,7 @@ import {
 import { cancelExchangeListing, createExchangeListing, createExchangeOffer, getMyExchangeMarketplace, listExchangeListings, respondExchangeOffer, syncExchangeMonsterSnapshot } from "./exchangeMarketplace.js";
 import { cancelItemListing, createItemListing, createItemRequest, getItemPriceSummaries, getMyItemMarketplace, listItemCatalog, listItemListings, respondItemRequest, saveItemCatalogEntry } from "./itemMarketplace.js";
 import { assertMarketplaceTabAccess } from "./marketplaceAccess.js";
-import { listMarketplaceHistory } from "./marketplaceHistory.js";
+import { listMarketplaceHistory, deleteMarketplaceHistoryRecord } from "./marketplaceHistory.js";
 import { getMarketplaceTabSettings, saveMarketplaceTabSettings, type MarketplaceTab } from "./marketplaceSettings.js";
 import { acknowledgeMarketplacePriceAlert, listMarketplacePriceAlerts, listMarketplacePriceResetLines, resetMarketplacePriceLine } from "./marketplacePriceProtection.js";
 import { createMarketplaceRequestAlert, type MarketplaceRequestAlert } from "../shared/marketplaceRequestAlerts.js";
@@ -592,6 +592,13 @@ async function startServer() {
     try {
       res.setHeader("Cache-Control", "no-store");
       res.json({ records: await listMarketplaceHistory(req.query) });
+    } catch (error) { respondMemberAuthError(res, error); }
+  });
+
+  app.delete("/api/marketplace/admin/history/:id", requireAdministrator, async (req, res) => {
+    try {
+      await deleteMarketplaceHistoryRecord(req.query.category, req.query.recordKind, req.query.listingType, req.params.id);
+      res.json({ success: true });
     } catch (error) { respondMemberAuthError(res, error); }
   });
 
