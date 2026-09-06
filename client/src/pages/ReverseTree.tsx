@@ -296,7 +296,7 @@ export default function ReverseTree() {
         </div>
       </header>
 
-      <div className="flex flex-shrink-0 items-end gap-1 overflow-x-auto border-b border-cyan-500/20 bg-slate-900/60 px-2 pt-2 sm:px-6">
+      <div className="flex flex-nowrap flex-shrink-0 items-end gap-1 overflow-x-auto overflow-y-hidden border-b border-cyan-500/20 bg-slate-900/60 px-2 pt-2 sm:px-6">
         {tabs.map((tab, index) => (
           <div
             key={tab.id}
