@@ -5,6 +5,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import { createHash } from "crypto";
 import { storagePut } from "./storage.js";
+import { listSiteUpdates, upsertSiteUpdate, replaceSiteUpdates } from "./siteUpdates.js";
 import { loadMonsterData, mergeMonsterMetadata, saveMonsterData } from "./monsterDataStore.js";
 import { normalizeStoredMonsterImageUrls, protectMonsterImageUrls } from "./monsterImageUrls.js";
 import { PROTECTED_MONSTER_IMAGE_HEADERS, readProtectedMonsterImage } from "./protectedMonsterImage.js";
@@ -71,7 +72,6 @@ import { sendMarketplaceRequestPushAlert } from "./marketplacePushNotifications.
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const MONSTERS_FILE_PATH = path.resolve(__dirname, "..", "client", "src", "data", "monsters.json");
-const UPDATES_FILE_PATH = path.resolve(__dirname, "..", "client", "src", "data", "updates.json");
 const FEEDBACKS_FILE_PATH = path.resolve(__dirname, "..", "client", "src", "data", "feedbacks.json");
 const MAX_OPTIMIZED_IMAGE_BYTES = 6 * 1024 * 1024;
 const updateSubscribers = new Set<import("http").ServerResponse>();
@@ -176,17 +176,6 @@ function requireMarketplaceTab(tab: MarketplaceTab) {
   };
 }
 
-function readUpdatesFile(): unknown[] {
-  try {
-    if (!fs.existsSync(UPDATES_FILE_PATH)) return [];
-    const value = JSON.parse(fs.readFileSync(UPDATES_FILE_PATH, "utf-8"));
-    return Array.isArray(value) ? value : [];
-  } catch (error) {
-    console.error("Failed to read updates:", error);
-    return [];
-  }
-}
-
 function broadcastUpdates(updates: unknown[]) {
   const payload = `event: updates\nid: ${Date.now()}\ndata: ${JSON.stringify(updates)}\n\n`;
   updateSubscribers.forEach((subscriber) => {
@@ -196,11 +185,6 @@ function broadcastUpdates(updates: unknown[]) {
       updateSubscribers.delete(subscriber);
     }
   });
-}
-
-function saveUpdatesFile(updates: unknown[]) {
-  fs.writeFileSync(UPDATES_FILE_PATH, JSON.stringify(updates, null, 2), "utf-8");
-  broadcastUpdates(updates);
 }
 
 function readFeedbacksFile(): unknown[] {
@@ -952,7 +936,9 @@ async function startServer() {
       "X-Accel-Buffering": "no",
     });
     updateSubscribers.add(res);
-    res.write(`event: updates\ndata: ${JSON.stringify(readUpdatesFile())}\n\n`);
+    listSiteUpdates()
+      .then((updates) => res.write(`event: updates\ndata: ${JSON.stringify(updates)}\n\n`))
+      .catch((error) => console.error("Failed to load updates for stream:", error));
     const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 25_000);
     req.on("close", () => {
       clearInterval(heartbeat);
@@ -960,26 +946,34 @@ async function startServer() {
     });
   });
 
-  app.get("/api/updates", (_req, res) => {
-    res.setHeader("Cache-Control", "no-store");
-    res.json(readUpdatesFile());
+  app.get("/api/updates", async (_req, res) => {
+    try {
+      res.setHeader("Cache-Control", "no-store");
+      res.json(await listSiteUpdates());
+    } catch (error) {
+      console.error("Failed to load updates:", error);
+      res.status(500).json({ error: "Failed to load updates" });
+    }
   });
 
-  app.post("/api/updates/append", requireAdministrator, (req, res) => {
+  app.post("/api/updates/append", requireAdministrator, async (req, res) => {
     try {
       const update = req.body;
       if (!update || typeof update !== "object" || !update.id || !update.title) {
         res.status(400).json({ error: "Invalid update item" });
         return;
       }
-      const byId = new Map(readUpdatesFile().map(item => [String((item as { id?: unknown }).id), item]));
-      byId.set(String(update.id), update);
-      const updates = Array.from(byId.values()).sort((a, b) => {
-        const aDate = Date.parse(String((a as { date?: unknown }).date || "")) || 0;
-        const bDate = Date.parse(String((b as { date?: unknown }).date || "")) || 0;
-        return bDate - aDate;
-      });
-      saveUpdatesFile(updates);
+      const normalized = {
+        id: String(update.id),
+        date: String(update.date || new Date().toISOString()),
+        version: String(update.version || ""),
+        title: String(update.title),
+        description: String(update.description || ""),
+        changes: Array.isArray(update.changes) ? update.changes.map(String) : [],
+        type: update.type === "fix" || update.type === "improvement" ? update.type : "feature",
+      } as const;
+      const updates = await upsertSiteUpdate(normalized);
+      broadcastUpdates(updates);
       res.json({ success: true, updates });
     } catch (error) {
       console.error("Failed to append update:", error);
@@ -987,14 +981,16 @@ async function startServer() {
     }
   });
 
-  app.post("/api/updates", requireAdministrator, (req, res) => {
+  app.post("/api/updates", requireAdministrator, async (req, res) => {
     try {
       const updates = req.body;
       if (!Array.isArray(updates)) {
         res.status(400).json({ error: "Invalid update data" });
         return;
       }
-      saveUpdatesFile(updates);
+      await replaceSiteUpdates(updates);
+      const saved = await listSiteUpdates();
+      broadcastUpdates(saved);
       res.json({ success: true });
     } catch (error) {
       console.error("Failed to save updates:", error);
