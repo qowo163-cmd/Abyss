@@ -360,7 +360,7 @@ export default function ReverseTree() {
           )}
         </main>
 
-        {detailMonster && <aside data-testid="mixbook-detail-panel" className="sticky top-0 hidden h-dvh max-h-dvh w-80 shrink-0 self-start flex-col border-l border-cyan-500/20 bg-slate-900/95 shadow-[-16px_0_32px_rgba(2,6,23,0.28)] backdrop-blur-sm sm:flex">
+        {detailMonster && <aside data-testid="mixbook-detail-panel" className="fixed right-0 top-0 z-40 hidden h-dvh max-h-dvh w-80 shrink-0 flex-col border-l border-cyan-500/20 bg-slate-900/95 shadow-[-16px_0_32px_rgba(2,6,23,0.28)] backdrop-blur-sm sm:flex">
           <div className="flex items-center justify-between border-b border-slate-700 p-4"><h2 className="font-semibold text-cyan-300">상세정보</h2><button type="button" onClick={() => setDetailMonster(null)} className="text-slate-400 hover:text-slate-200"><X className="h-5 w-5" /></button></div>
           <div className="space-y-4 overflow-y-auto p-4"><DetailImageButton monster={detailMonster} onExpand={() => setIsDetailImageOpen(true)} /><Detail label="이름" value={detailMonster.name} /><Detail label="레벨" value={`Lv. ${detailMonster.baseLevel} ~ ${detailMonster.maxLevel}`} /><Detail label="속성" value={detailMonster.attribute} /><Detail label="서식지" value={detailMonster.habitat || '-'} /><Detail label="메인 재료" value={detailMonster.main || '-'} /><Detail label="서브 재료" value={detailMonster.sub || '-'} /><Detail label="보조 재료" value={detailMonster.main2 || '-'} /><Detail label="보조 재료 2" value={detailMonster.sub2 || '-'} /></div>
         </aside>}
