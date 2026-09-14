@@ -55,7 +55,28 @@ async function writeDatabase(monsters: MonsterRecord[]) {
   );
 }
 
+let cachedMonsters: MonsterRecord[] | null = null;
+let cachedAt = 0;
+// 이미지 하나 보여줄 때마다 전체 데이터를 다시 읽어오면 사이트가 느려지므로,
+// 10초 동안은 방금 읽은 결과를 그대로 재사용해요. 몬스터 정보를 수정하면
+// 즉시 캐시를 비워서(invalidateMonsterDataCache) 낡은 데이터가 보이지 않게 해요.
+const CACHE_TTL_MS = 10_000;
+
+export function invalidateMonsterDataCache() {
+  cachedMonsters = null;
+}
+
 export async function loadMonsterData(fallbackPath: string): Promise<MonsterRecord[]> {
+  const now = Date.now();
+  if (cachedMonsters && now - cachedAt < CACHE_TTL_MS) return cachedMonsters;
+
+  const result = await loadMonsterDataUncached(fallbackPath);
+  cachedMonsters = result;
+  cachedAt = now;
+  return result;
+}
+
+async function loadMonsterDataUncached(fallbackPath: string): Promise<MonsterRecord[]> {
   if (persistentStoreEnabled() && (process.env.DATABASE_URL || testPool)) {
     try {
       const stored = await readDatabase();
@@ -82,6 +103,8 @@ export async function saveMonsterData(monsters: MonsterRecord[], fallbackPath: s
   } catch (error) {
     if (!persistentStoreEnabled() || (!process.env.DATABASE_URL && !testPool)) throw error;
     console.warn("Persistent monster data saved, but JSON development fallback could not be updated:", error);
+  } finally {
+    invalidateMonsterDataCache();
   }
 }
 
