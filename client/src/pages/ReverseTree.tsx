@@ -288,7 +288,7 @@ export default function ReverseTree() {
   };
 
   return (
-    <div className="flex min-h-full flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="flex min-h-full min-w-0 flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <header className="flex-shrink-0 border-b border-cyan-500/20 bg-slate-900/80 backdrop-blur-sm">
         <div className="px-4 py-3 sm:px-6 sm:py-4">
           <div className="mb-2 flex items-center gap-2"><GitBranch className="h-5 w-5 text-cyan-400 sm:h-6 sm:w-6" /><h1 className="text-lg font-bold text-cyan-300 sm:text-2xl">믹스 트리</h1></div>
@@ -331,8 +331,8 @@ export default function ReverseTree() {
         <span className="ml-auto flex-shrink-0 self-center pb-1 pl-2 text-[10px] text-slate-500 sm:text-xs">{tabs.length} / {MAX_MIX_TREE_TABS}</span>
       </div>
 
-      <div className="flex min-h-0 flex-1">
-        <main className="flex min-h-0 flex-1 flex-col gap-3 overflow-visible px-4 py-4 sm:gap-4 sm:overflow-hidden sm:px-6 sm:py-6">
+      <div className="flex min-h-0 min-w-0 flex-1">
+        <main className="flex min-h-0 min-w-0 flex-1 flex-col gap-3 overflow-visible px-4 py-4 sm:gap-4 sm:overflow-hidden sm:px-6 sm:py-6">
           <section className="flex-shrink-0">
             <label className="mb-2 block text-xs font-semibold text-cyan-300 sm:mb-3 sm:text-sm">헨치 선택</label>
             {selectedMonster ? (
@@ -355,7 +355,7 @@ export default function ReverseTree() {
             )}
           </section>
 
-          {treeRoot ? <section ref={treeCanvasRef} data-testid="mixbook-canvas" className="abyss-mixbook-canvas min-h-0 flex-1 overflow-visible rounded-2xl border p-2 [overflow-anchor:none] sm:overflow-auto sm:p-4"><TreeNodeCard node={treeRoot} expandedNodes={expandedNodes} onToggle={toggleNode} onShowDetail={setDetailMonster} buildTreeNode={buildTreeNode} /></section> : (
+          {treeRoot ? <section ref={treeCanvasRef} data-testid="mixbook-canvas" className="abyss-mixbook-canvas min-h-0 min-w-0 flex-1 overflow-visible rounded-2xl border p-2 [overflow-anchor:none] sm:overflow-auto sm:p-4"><TreeNodeCard node={treeRoot} expandedNodes={expandedNodes} onToggle={toggleNode} onShowDetail={setDetailMonster} buildTreeNode={buildTreeNode} /></section> : (
             <section className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-800/30"><div className="px-4 py-8 text-center"><GitBranch className="mx-auto mb-3 h-10 w-10 text-slate-600 sm:h-12 sm:w-12" /><p className="text-xs text-slate-400 sm:text-base">헨치를 선택하여 믹스 트리를 확인하세요.</p></div></section>
           )}
         </main>

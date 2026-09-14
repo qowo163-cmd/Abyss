@@ -64,7 +64,7 @@ function Router() {
       {!isMobile && !isAdminRoute && <SideNavigation currentPath={location} isAdmin={isAdministrator} onLogout={() => void handleLogout()} isLoggingOut={isLoggingOut} />}
 
       {/* 메인 콘테츠 */}
-      <main className={cn("flex-1 pb-20 md:pb-0", !isAdminRoute && "md:ml-64")}>
+      <main className={cn("flex-1 overflow-x-hidden pb-20 md:pb-0", !isAdminRoute && "md:ml-64")}>
         <React.Suspense fallback={<PageLoadingFallback />}>
           <Switch>
             <Route path={"/"} component={MainHome} />
