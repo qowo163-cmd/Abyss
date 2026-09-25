@@ -82,6 +82,9 @@ export default function Admin() {
   const [secondaryColor, setSecondaryColor] = useState(() => localStorage.getItem('secondaryColor') || '#0f172a');
   const [uploadingImage, setUploadingImage] = useState(false);
   const imageInputRef = useRef<HTMLInputElement>(null);
+  const bulkImageInputRef = useRef<HTMLInputElement>(null);
+  const [bulkUploading, setBulkUploading] = useState(false);
+  const [bulkResults, setBulkResults] = useState<{ fileName: string; monsterName?: string; status: 'success' | 'unmatched' | 'error'; message?: string }[]>([]);
   const [updates, setUpdates] = useState<UpdateItem[]>([]);
   const [feedbacks, setFeedbacks] = useState<FeedbackItem[]>([]);
   const [imageOptimization, setImageOptimization] = useState<OptimizedImage | null>(null);
@@ -390,6 +393,76 @@ export default function Admin() {
       setUploadingImage(false);
       if (imageInputRef.current) imageInputRef.current.value = '';
     }
+  };
+
+  // 파일 이름을 헨치 이름과 비교하기 좋게 다듬기: 띄어쓰기 제거, 소문자 변환
+  const normalizeForImageMatch = (value: string) => value.replace(/\s+/g, '').trim().toLowerCase();
+
+  // 헨치 이미지 일괄 업로드: 파일 이름이 헨치 이름과 일치하면(띄어쓰기 무시) 자동으로 그 헨치에 적용
+  const handleBulkImageUpload = async (files: FileList) => {
+    setBulkUploading(true);
+    setBulkResults([]);
+    const results: typeof bulkResults = [];
+    let latestMonsters = monsters;
+    const appliedNames: string[] = [];
+
+    for (const file of Array.from(files)) {
+      const baseName = file.name.replace(/\.[^./\\]+$/, '');
+      const target = latestMonsters.find((monster) => normalizeForImageMatch(monster.name) === normalizeForImageMatch(baseName));
+      if (!target) {
+        results.push({ fileName: file.name, status: 'unmatched', message: '이름이 일치하는 헨치를 찾지 못했습니다' });
+        setBulkResults([...results]);
+        continue;
+      }
+      try {
+        const optimized = await optimizeImageForUpload(file);
+        const response = await fetch('/api/monster-image', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            monsterId: target.id,
+            fileName: optimized.file.name,
+            contentType: optimized.file.type,
+            data: optimized.dataUrl,
+          }),
+        });
+        if (!response.ok) throw new Error('서버 업로드 실패');
+        const result = await response.json() as { url?: string; monster?: Monster };
+        if (!result.url) throw new Error('업로드 URL이 없습니다');
+        const updatedMonster = result.monster && String(result.monster.id) === String(target.id)
+          ? result.monster
+          : { ...target, imageUrl: result.url, imageVersion: Date.now() };
+        latestMonsters = latestMonsters.map((monster) => monster.id === updatedMonster.id ? updatedMonster : monster);
+        if (!result.monster) {
+          const saved = await persistMonsters(latestMonsters);
+          if (saved) latestMonsters = saved;
+        }
+        appliedNames.push(target.name);
+        results.push({ fileName: file.name, monsterName: target.name, status: 'success' });
+      } catch (error) {
+        results.push({ fileName: file.name, monsterName: target.name, status: 'error', message: error instanceof Error ? error.message : '업로드 실패' });
+      }
+      setBulkResults([...results]);
+    }
+
+    setMonsters(latestMonsters);
+    replaceMonsterData(latestMonsters);
+
+    if (appliedNames.length > 0) {
+      await recordSiteUpdate({
+        version: new Date().toISOString().slice(0, 10),
+        title: '헨치 이미지 일괄 업로드',
+        description: `${appliedNames.length}개 헨치 이미지가 일괄 업로드되었습니다`,
+        changes: [`적용된 헨치: ${appliedNames.slice(0, 10).join(', ')}${appliedNames.length > 10 ? ` 외 ${appliedNames.length - 10}개` : ''}`],
+        type: 'feature',
+      });
+      toast.success(`${appliedNames.length}개 이미지 적용 완료`);
+    }
+    const unmatchedCount = results.filter((entry) => entry.status === 'unmatched').length;
+    if (unmatchedCount > 0) toast.error(`${unmatchedCount}개 파일은 이름이 일치하는 헨치를 찾지 못했습니다`);
+
+    setBulkUploading(false);
+    if (bulkImageInputRef.current) bulkImageInputRef.current.value = '';
   };
 
   // 몬스터 삭제
@@ -1038,6 +1111,39 @@ export default function Admin() {
                 <Input aria-label="일괄 서식지" value={bulkHabitat} onChange={(event) => setBulkHabitat(event.target.value)} placeholder="변경할 서식지 (비우면 유지)" className="bg-slate-900 border-slate-700" />
                 <Button type="button" onClick={() => void handleBulkMonsterEdit()} className="bg-cyan-500 text-slate-950 hover:bg-cyan-400">일괄 반영</Button>
               </div>
+            </section>
+
+            <section className="space-y-3 rounded-lg border border-cyan-500/30 bg-slate-800/50 p-4">
+              <div>
+                <h3 className="font-semibold text-cyan-200">헨치 이미지 일괄 업로드</h3>
+                <p className="text-xs text-slate-400">파일 이름을 헨치 이름과 똑같이 맞춰서 여러 장을 한 번에 선택하면, 이름이 일치하는 헨치에 자동으로 적용돼요. (예: "마신 드래곤.png" → "마신드래곤" 헨치, 띄어쓰기는 무시하고 비교해요)</p>
+              </div>
+              <input
+                ref={bulkImageInputRef}
+                type="file"
+                accept="image/*"
+                multiple
+                onChange={(e) => {
+                  const files = e.target.files;
+                  if (files && files.length > 0) void handleBulkImageUpload(files);
+                }}
+                className="hidden"
+              />
+              <Button type="button" variant="outline" onClick={() => bulkImageInputRef.current?.click()} disabled={bulkUploading} className="gap-2 text-xs">
+                <Upload className="h-3 w-3" />
+                {bulkUploading ? '업로드 중...' : '이미지 여러 장 선택'}
+              </Button>
+              {bulkResults.length > 0 && (
+                <div className="max-h-48 space-y-1 overflow-y-auto rounded-md border border-slate-700 bg-slate-900/60 p-2 text-xs">
+                  {bulkResults.map((entry, index) => (
+                    <div key={`${entry.fileName}-${index}`} className={entry.status === 'success' ? 'text-green-400' : entry.status === 'unmatched' ? 'text-amber-400' : 'text-red-400'}>
+                      {entry.status === 'success' && `✓ ${entry.fileName} → ${entry.monsterName}`}
+                      {entry.status === 'unmatched' && `⚠ ${entry.fileName} — 일치하는 헨치 없음`}
+                      {entry.status === 'error' && `✗ ${entry.fileName} — ${entry.message}`}
+                    </div>
+                  ))}
+                </div>
+              )}
             </section>
 
             {/* 몬스터 목록 */}
