@@ -88,6 +88,12 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
                 <div className={cn('absolute right-3 top-3 rounded-full px-3 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-bold', colors.text, colors.bg)}>
                   {monster.attribute}
                 </div>
+                {/* 장코/단코 배지 */}
+                {monster.type && (
+                  <div className={cn('absolute left-3 top-3 rounded-full px-3 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-bold', monster.type === '장코' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800')}>
+                    {monster.type}
+                  </div>
+                )}
               </div>
             </div>
 

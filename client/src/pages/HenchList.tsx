@@ -339,7 +339,10 @@ export default function HenchList() {
                     <div className="p-2 sm:p-3 space-y-1 sm:space-y-2">
                       <div>
                         <p className="font-semibold text-slate-200 text-xs sm:text-sm truncate">{monster.name}</p>
-                        <p className="text-xs text-cyan-400 font-bold">{monster.attribute}</p>
+                        <div className="flex items-center gap-1.5">
+                          <p className="text-xs text-cyan-400 font-bold">{monster.attribute}</p>
+                          {monster.type && <span className={`rounded px-1 py-px text-[10px] font-bold ${monster.type === '장코' ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'}`}>{monster.type}</span>}
+                        </div>
                       </div>
 
                       {/* 레벨 정보 */}

@@ -93,6 +93,7 @@ export default function Admin() {
   const [selectedMonsterIds, setSelectedMonsterIds] = useState<Set<string>>(new Set());
   const [bulkAcquired, setBulkAcquired] = useState<'__keep__' | '0' | 'x'>('__keep__');
   const [bulkHabitat, setBulkHabitat] = useState('');
+  const [clearBulkHabitat, setClearBulkHabitat] = useState(false);
   const [pendingImportedMonsters, setPendingImportedMonsters] = useState<Monster[] | null>(null);
   const [pendingImportMismatches, setPendingImportMismatches] = useState<AcquiredMismatch[]>([]);
   const [marketplaceTabSettings, setMarketplaceTabSettings] = useState<MarketplaceTabSettings>(DEFAULT_MARKETPLACE_TAB_SETTINGS);
@@ -293,7 +294,7 @@ export default function Admin() {
     }
     const edit = {
       ...(bulkAcquired === '__keep__' ? {} : { acquired: bulkAcquired }),
-      ...(bulkHabitat.trim() ? { habitat: bulkHabitat } : {}),
+      ...(clearBulkHabitat ? { habitat: '' } : bulkHabitat.trim() ? { habitat: bulkHabitat } : {}),
     };
     if (Object.keys(edit).length === 0) {
       toast.error('변경할 득코 여부 또는 서식지를 입력해 주세요.');
@@ -308,14 +309,32 @@ export default function Admin() {
       description: `${selectedMonsterIds.size}개 헨치의 득코 여부 또는 서식지를 일괄 수정했습니다`,
       changes: [
         ...(bulkAcquired === '__keep__' ? [] : [`득코 여부: ${bulkAcquired === '0' ? '가능' : '불가능'}`]),
-        ...(bulkHabitat.trim() ? [`서식지: ${bulkHabitat.trim()}`] : []),
+        ...(clearBulkHabitat ? ['서식지: 비움'] : bulkHabitat.trim() ? [`서식지: ${bulkHabitat.trim()}`] : []),
       ],
       type: 'improvement',
     });
     setSelectedMonsterIds(new Set());
     setBulkAcquired('__keep__');
     setBulkHabitat('');
+    setClearBulkHabitat(false);
     toast.success(`${selectedMonsterIds.size}개 헨치 정보가 일괄 반영되었습니다.`);
+  };
+
+  // 전체 헨치의 서식지를 한 번에 비웁니다 (선택 여부와 상관없이 전부 적용).
+  const handleClearAllHabitats = async () => {
+    const ok = window.confirm(`전체 ${monsters.length}개 헨치의 서식지를 모두 지울까요?\n되돌릴 수 없습니다.`);
+    if (!ok) return;
+    const updated = monsters.map((monster) => ({ ...monster, habitat: '' }));
+    const saved = await persistMonsters(updated);
+    if (!saved) return;
+    await recordSiteUpdate({
+      version: new Date().toISOString().slice(0, 10),
+      title: '헨치 서식지 전체 삭제',
+      description: `전체 ${updated.length}개 헨치의 서식지 정보를 일괄 삭제했습니다`,
+      changes: ['모든 헨치의 서식지 값을 비움'],
+      type: 'improvement',
+    });
+    toast.success(`전체 ${updated.length}개 헨치의 서식지를 삭제했습니다.`);
   };
 
   // 몬스터 수정
@@ -1108,8 +1127,19 @@ export default function Admin() {
                   <option value="0">득코 가능으로 변경</option>
                   <option value="x">득코 불가능으로 변경</option>
                 </select>
-                <Input aria-label="일괄 서식지" value={bulkHabitat} onChange={(event) => setBulkHabitat(event.target.value)} placeholder="변경할 서식지 (비우면 유지)" className="bg-slate-900 border-slate-700" />
+                <div className="flex items-center gap-2">
+                  <Input aria-label="일괄 서식지" value={bulkHabitat} onChange={(event) => setBulkHabitat(event.target.value)} placeholder="변경할 서식지 (비우면 유지)" disabled={clearBulkHabitat} className="bg-slate-900 border-slate-700 disabled:opacity-50" />
+                </div>
                 <Button type="button" onClick={() => void handleBulkMonsterEdit()} className="bg-cyan-500 text-slate-950 hover:bg-cyan-400">일괄 반영</Button>
+              </div>
+              <div className="flex flex-col gap-2 border-t border-slate-700/60 pt-3 sm:flex-row sm:items-center sm:justify-between">
+                <label className="flex items-center gap-2 text-xs text-slate-300">
+                  <input type="checkbox" checked={clearBulkHabitat} onChange={(event) => setClearBulkHabitat(event.target.checked)} className="h-4 w-4 rounded border-slate-600 bg-slate-900" />
+                  선택한 헨치의 서식지를 비우기 (위 "일괄 반영" 버튼 클릭 시 적용)
+                </label>
+                <Button type="button" variant="outline" onClick={() => void handleClearAllHabitats()} className="border-rose-700 text-rose-300 hover:bg-rose-950 hover:text-rose-200">
+                  전체 헨치 서식지 일괄 삭제 (선택과 무관하게 전부)
+                </Button>
               </div>
             </section>
 
@@ -1215,6 +1245,17 @@ export default function Admin() {
                       onChange={(e) => setEditingMonster({ ...editingMonster, attribute: e.target.value })}
                       className="bg-slate-700/50 border-slate-600 text-xs"
                     />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-slate-300">장코/단코</label>
+                    <select
+                      value={editingMonster.type || '장코'}
+                      onChange={(e) => setEditingMonster({ ...editingMonster, type: e.target.value })}
+                      className="flex h-9 w-full rounded-md border border-slate-600 bg-slate-700/50 px-3 py-1 text-xs text-slate-100"
+                    >
+                      <option value="장코">장코</option>
+                      <option value="단코">단코</option>
+                    </select>
                   </div>
                   <div>
                     <label className="text-xs font-medium text-slate-300">최소 레벨</label>

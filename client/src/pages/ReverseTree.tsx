@@ -71,6 +71,7 @@ const TreeNodeCard = memo(function TreeNodeCard({
                 {node.monster.name}
               </button>
               {enchantLevel !== undefined && <span data-testid="mixbook-enchant-badge" className="rounded-lg border border-violet-500 bg-violet-100 px-2 py-0.5 text-xs font-extrabold text-violet-800 shadow-sm">[{enchantLevel}단계]</span>}
+              {node.monster.type && <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${node.monster.type === '장코' ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-sky-500 bg-sky-100 text-sky-800'}`}>{node.monster.type}</span>}
             </div>
             <p className="text-xs text-slate-400">Lv.{node.monster.baseLevel || 0}~{node.monster.maxLevel || 0}</p>
           </div>

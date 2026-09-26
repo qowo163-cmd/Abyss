@@ -7,6 +7,8 @@ export interface Monster {
   main2: string | null;
   sub2: string | null;
   attribute: string;
+  /** 장코/단코 구분 (부화 기간 종류) */
+  type?: string;
   baseLevel: number;
   maxLevel: number;
   acquired: string;
