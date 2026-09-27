@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { ChevronDown, X } from 'lucide-react';
 import { attributeImages } from '@/data/attributeImages';
 import { useMonsterData } from '@/hooks/useMonsterData';
+import { getRecipeIngredients, normalizeRecipeName, compactRecipeName } from '@/lib/recipeResolver';
 
 interface Monster {
   id: string;
@@ -55,12 +56,14 @@ export default function ReverseRecipe() {
 
     // 모든 몬스터를 순회하면서 targetMonster를 주·부·보조 재료로 사용하는 몬스터 찾기
     monsters.forEach((m) => {
-      const ingredientNames = [m.main, m.sub, m.main2, m.sub2]
-        .filter((ingredient): ingredient is string => Boolean(ingredient && ingredient !== '-'))
-        .map(ingredient => ingredient.split('[')[0].trim());
+      const ingredientNames = getRecipeIngredients(m).map(normalizeRecipeName);
 
-      // 정확한 이름 매칭
-      if (ingredientNames.includes(targetMonster.name)) {
+      // 정확한 이름 매칭 (표기가 틀린 재료명은 별칭 표로 보정, 그래도 안 맞으면 공백 무시하고 재비교)
+      const targetName = targetMonster.name;
+      const matched = ingredientNames.includes(targetName)
+        || ingredientNames.some((ingredient) => compactRecipeName(ingredient) === compactRecipeName(targetName));
+
+      if (matched) {
         if (!visited.has(m.id)) {
           recipes.push(buildReverseTree(m, depth + 1, new Set(visited)));
         }
