@@ -1,5 +1,48 @@
 import * as XLSX from 'xlsx';
+import { unzipSync, zipSync } from 'fflate';
 import type { Monster } from '../types/monster';
+
+// 한컴오피스(HCell)로 저장한 엑셀 파일은 모든 XML 태그에 "x:" 접두사를 붙이고,
+// 텍스트 서식에 한컴 전용 확장 태그(hs:...)를 끼워 넣습니다. 둘 다 표준 엑셀
+// 파일과 달라서, 사이트가 쓰는 xlsx 라이브러리가 이 파일을 읽다가 조용히
+// 실패해서(에러 없이 그냥 빈 결과) 업로드 시 헨치 목록이 통째로 사라지는
+// 원인이 됩니다. 처음 읽기가 비어 있으면, 이 함수로 파일 내부를 고쳐서
+// 한 번 더 시도합니다.
+function sanitizeHancomWorkbook(data: ArrayBuffer): ArrayBuffer | null {
+  try {
+    const entries = unzipSync(new Uint8Array(data));
+    const decoder = new TextDecoder('utf-8');
+    const encoder = new TextEncoder();
+    const fixed: Record<string, Uint8Array> = {};
+    let changedAny = false;
+
+    for (const [name, bytes] of Object.entries(entries)) {
+      if (!name.endsWith('.xml') && !name.endsWith('.rels')) {
+        fixed[name] = bytes;
+        continue;
+      }
+      let text = decoder.decode(bytes);
+      const before = text;
+      // 기본 네임스페이스 별칭(xmlns:x=...)을 진짜 기본 네임스페이스로 되돌리고,
+      // 모든 요소의 "x:" 접두사를 제거합니다.
+      text = text.replace(/xmlns:x="([^"]+)"/g, 'xmlns="$1"');
+      text = text.replace(/<x:/g, '<').replace(/<\/x:/g, '</');
+      // 한컴 전용 확장 요소(hs:...)는 표준 엑셀 라이브러리가 모르는 태그라서
+      // 통째로 제거합니다 (자체닫힘 태그와 여는/닫는 태그 쌍 모두).
+      text = text.replace(/<hs:[a-zA-Z0-9_]+(?:\s[^>]*?)?\/>/g, '');
+      text = text.replace(/<hs:([a-zA-Z0-9_]+)(?:\s[^>]*?)?>[\s\S]*?<\/hs:\1>/g, '');
+      if (text !== before) changedAny = true;
+      fixed[name] = encoder.encode(text);
+    }
+
+    if (!changedAny) return null;
+    const rezipped = zipSync(fixed, { level: 0 });
+    return rezipped.buffer.slice(rezipped.byteOffset, rezipped.byteOffset + rezipped.byteLength) as ArrayBuffer;
+  } catch (error) {
+    console.error('Failed to sanitize Hancom workbook:', error);
+    return null;
+  }
+}
 
 export function parseCsvRows(csv: string): string[][] {
   const rows: string[][] = [];
@@ -139,42 +182,56 @@ function parseNamedRow(row: Record<string, unknown>, index: number): Monster | n
     acquired,
     habitat: text(row['서식지'] ?? row['habitat']),
     xAntibody: numberValue(row['X데이터'] ?? row['x데이터'] ?? row['x항체'] ?? row['X항체'] ?? row['xAntibody'], 0),
+    ...(text(row['장단'] ?? row['type']) ? { type: text(row['장단'] ?? row['type']) } : {}),
   });
+}
+
+function parseWorkbookMonsters(workbook: XLSX.WorkBook): Monster[] {
+  let best: Monster[] = [];
+
+  // Prefer named-column parsing. This supports the current 1111.xlsx layout:
+  // 이름, 레벨, 장단, 서식지, 메인, 서브, 메인2, 서브2, 획득여부, 속성,
+  // 기본레벨, 최대레벨, X데이터(구형 x항체 헤더도 호환).
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) continue;
+    const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
+      defval: '',
+      raw: false,
+    });
+    const parsed = rows.flatMap((row, index) => {
+      const monster = parseNamedRow(row, index);
+      return monster ? [monster] : [];
+    });
+    if (parsed.length > best.length) best = parsed;
+  }
+
+  if (best.length > 0) return best;
+
+  // Fallback for legacy exports that use positional columns without names.
+  for (const sheetName of workbook.SheetNames) {
+    const sheet = workbook.Sheets[sheetName];
+    if (!sheet) continue;
+    const csv = XLSX.utils.sheet_to_csv(sheet, { FS: ',', RS: '\n', blankrows: false });
+    const parsed = parseMonsterCsv(csv);
+    if (parsed.length > best.length) best = parsed;
+  }
+  return best;
 }
 
 export function parseMonsterExcel(data: ArrayBuffer): Monster[] {
   try {
     const workbook = XLSX.read(data, { type: 'array', cellDates: true, raw: false });
-    let best: Monster[] = [];
+    const result = parseWorkbookMonsters(workbook);
+    if (result.length > 0) return result;
 
-    // Prefer named-column parsing. This supports the current 1111.xlsx layout:
-    // 이름, 레벨, 장단, 서식지, 메인, 서브, 메인2, 서브2, 획득여부, 속성,
-    // 기본레벨, 최대레벨, X데이터(구형 x항체 헤더도 호환).
-    for (const sheetName of workbook.SheetNames) {
-      const sheet = workbook.Sheets[sheetName];
-      if (!sheet) continue;
-      const rows = XLSX.utils.sheet_to_json<Record<string, unknown>>(sheet, {
-        defval: '',
-        raw: false,
-      });
-      const parsed = rows.flatMap((row, index) => {
-        const monster = parseNamedRow(row, index);
-        return monster ? [monster] : [];
-      });
-      if (parsed.length > best.length) best = parsed;
-    }
-
-    if (best.length > 0) return best;
-
-    // Fallback for legacy exports that use positional columns without names.
-    for (const sheetName of workbook.SheetNames) {
-      const sheet = workbook.Sheets[sheetName];
-      if (!sheet) continue;
-      const csv = XLSX.utils.sheet_to_csv(sheet, { FS: ',', RS: '\n', blankrows: false });
-      const parsed = parseMonsterCsv(csv);
-      if (parsed.length > best.length) best = parsed;
-    }
-    return best;
+    // 한컴오피스(HCell) 파일 등, 표준과 다른 표기 때문에 아무 것도 못 읽었을
+    // 때를 대비한 보정 재시도입니다. 정상적인 엑셀 파일은 이 단계까지 오지
+    // 않고 위에서 이미 값을 반환합니다.
+    const sanitized = sanitizeHancomWorkbook(data);
+    if (!sanitized) return [];
+    const sanitizedWorkbook = XLSX.read(sanitized, { type: 'array', cellDates: true, raw: false });
+    return parseWorkbookMonsters(sanitizedWorkbook);
   } catch (error) {
     console.error('Failed to parse excel file:', error);
     return [];
