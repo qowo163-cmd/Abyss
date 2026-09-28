@@ -27,12 +27,15 @@ async function monster(name:string) {
   return list[0];
 }
 async function registerCommands(){
+  const rest=new REST({version:"10"}).setToken(TOKEN);
+  // 이전에 전역으로 등록된 명령어가 남아 중복으로 보이지 않도록 정리합니다.
+  await rest.put(Routes.applicationCommands(CLIENT_ID),{body:[]});
   const commands=[
     new SlashCommandBuilder().setName("link").setDescription("Abyss 계정과 Discord 계정을 연동합니다.").addStringOption(o=>o.setName("code").setDescription("사이트에서 생성한 10분 연동 코드").setRequired(true)),
     new SlashCommandBuilder().setName("market").setDescription("Abyss 판매 거래소").addSubcommand(s=>s.setName("search").setDescription("판매글을 조회합니다").addStringOption(o=>o.setName("query").setDescription("헨치 이름"))).addSubcommand(s=>s.setName("create").setDescription("판매글을 등록합니다").addStringOption(o=>o.setName("monster").setDescription("헨치 이름").setRequired(true)).addIntegerOption(o=>o.setName("quantity").setDescription("수량").setMinValue(1).setRequired(true)).addIntegerOption(o=>o.setName("price").setDescription("마리당 자사 가격").setMinValue(1).setRequired(true)).addStringOption(o=>o.setName("note").setDescription("메모").setMaxLength(300))).addSubcommand(s=>s.setName("mine").setDescription("내 판매글을 조회합니다")).addSubcommand(s=>s.setName("cancel").setDescription("내 판매글을 취소합니다").addStringOption(o=>o.setName("id").setDescription("거래 ID").setRequired(true))),
     new SlashCommandBuilder().setName("exchange").setDescription("Abyss 교환 거래소").addSubcommand(s=>s.setName("search").setDescription("교환글을 조회합니다").addStringOption(o=>o.setName("query").setDescription("헨치 이름"))).addSubcommand(s=>s.setName("create").setDescription("교환글을 등록합니다").addStringOption(o=>o.setName("offered").setDescription("내가 줄 헨치").setRequired(true)).addIntegerOption(o=>o.setName("quantity").setDescription("내가 줄 수량").setMinValue(1).setRequired(true)).addStringOption(o=>o.setName("wants").setDescription("원하는 헨치:수량,헨치:수량").setRequired(true)).addStringOption(o=>o.setName("note").setDescription("메모").setMaxLength(300))).addSubcommand(s=>s.setName("mine").setDescription("내 교환글/제안을 조회합니다")).addSubcommand(s=>s.setName("cancel").setDescription("내 교환글을 취소합니다").addStringOption(o=>o.setName("id").setDescription("교환글 ID").setRequired(true))),
   ].map(c=>c.toJSON());
-  const rest=new REST({version:"10"}).setToken(TOKEN); if(GUILD_ID) await rest.put(Routes.applicationGuildCommands(CLIENT_ID,GUILD_ID),{body:commands}); else await rest.put(Routes.applicationCommands(CLIENT_ID),{body:commands});
+  if(GUILD_ID) await rest.put(Routes.applicationGuildCommands(CLIENT_ID,GUILD_ID),{body:commands}); else await rest.put(Routes.applicationCommands(CLIENT_ID),{body:commands});
 }
 function listingEmbed(l:any){return new EmbedBuilder().setTitle(`🏪 ${l.monster?.name||l.offered?.monster?.name||"거래"}`).setDescription(l.note||"메모 없음").addFields({name:"수량",value:String(l.quantity??l.offered?.quantity??"-"),inline:true},{name:"가격",value:l.priceBoxes!=null?`${l.priceBoxes} BOX`:`교환`,inline:true},{name:"판매자",value:l.sellerGameNickname||l.ownerGameNickname||"-",inline:true}).setFooter({text:`ID: ${l.id}`});}
 async function handle(i:ChatInputCommandInteraction){
