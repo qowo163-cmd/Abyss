@@ -484,14 +484,35 @@ async function startServer() {
       res.json({ monsters: protectedMonsters.map((monster) => ({
         ...snapshotOf(monster),
         habitat: monster.habitat ? String(monster.habitat) : null,
-        imageUrl: monster.imageUrl
-          ? (String(monster.imageUrl).startsWith("/")
-            ? `${req.protocol}://${req.get("host")}${String(monster.imageUrl)}`
-            : String(monster.imageUrl))
-          : null,
+        imageUrl: monster.imageUrl ? String(monster.imageUrl) : null,
       })) });
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "몬스터 조회 실패" });
+    }
+  });
+
+  app.get("/api/internal/discord/monster-image/:monsterId", async (req, res) => {
+    if (!process.env.DISCORD_INTERNAL_SECRET || req.headers["x-abyss-discord-secret"] !== process.env.DISCORD_INTERNAL_SECRET) {
+      return res.status(403).end();
+    }
+    try {
+      const monsters = await loadMonsterData(MONSTERS_FILE_PATH);
+      const monster = monsters.find((item) => String(item.id || "") === String(req.params.monsterId || ""));
+      if (!monster) return res.status(404).end();
+      const protectedMonster = protectMonsterImageUrls([monster])[0];
+      const imageUrl = protectedMonster?.imageUrl ? String(protectedMonster.imageUrl) : "";
+      if (!imageUrl) return res.status(404).end();
+      const key = new URL(imageUrl, `${req.protocol}://${req.get("host")}`).searchParams.get("key");
+      if (!key) return res.status(404).end();
+      const image = await readProtectedMonsterImage(monsters, key);
+      if (!image) return res.status(404).end();
+      res.set(PROTECTED_MONSTER_IMAGE_HEADERS);
+      res.setHeader("Content-Type", image.contentType);
+      res.setHeader("Content-Length", String(image.bytes.length));
+      res.status(200).end(image.bytes);
+    } catch (error) {
+      console.error("Failed to load Discord monster image:", error);
+      res.status(502).end();
     }
   });
 

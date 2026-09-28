@@ -19,6 +19,17 @@ async function linked(interaction:ChatInputCommandInteraction) {
   if(!data.member) throw new Error("먼저 /link 명령어로 Abyss 계정을 연동해 주세요.");
   return data.member;
 }
+async function fetchMonsterImage(monsterId:string) {
+  const response=await fetch(`${API}/api/internal/discord/monster-image/${encodeURIComponent(monsterId)}`, {
+    method:"GET",
+    headers:{"x-abyss-discord-secret":SECRET},
+  });
+  if(!response.ok) return null;
+  const contentType=response.headers.get("content-type")||"image/webp";
+  const buffer=Buffer.from(await response.arrayBuffer());
+  if(!buffer.length) return null;
+  return {buffer,contentType};
+}
 async function monster(name:string) {
   const data=await api(`/api/internal/discord/monsters?query=${encodeURIComponent(name)}`, { method:"GET" });
   const list=data.monsters||[];
@@ -61,25 +72,24 @@ async function handle(i:ChatInputCommandInteraction){
     const embeds:EmbedBuilder[]=[];
     const files:AttachmentBuilder[]=[];
     for(const m of results){
-      const imageUrl=typeof m.imageUrl==='string'?(m.imageUrl.startsWith('/')?`${API}${m.imageUrl}`:m.imageUrl):'';
       const embed=new EmbedBuilder().setTitle(`📖 ${m.name}`).setColor(0x22d3ee).addFields(
         {name:'📍 서식지',value:String(m.habitat||'정보 없음'),inline:false},
         {name:'속성',value:String(m.attribute||'-'),inline:true},
         {name:'종류',value:String(m.type||'-'),inline:true},
         {name:'레벨',value:String(m.level||'-'),inline:true},
       );
-      if(imageUrl){
-        try{
-          const imageResponse=await fetch(imageUrl);
-          if(imageResponse.ok){
-            const contentType=imageResponse.headers.get('content-type')||'image/webp';
-            const buffer=Buffer.from(await imageResponse.arrayBuffer());
-            const extension=contentType.includes('png')?'png':contentType.includes('jpeg')||contentType.includes('jpg')?'jpg':'webp';
-            const fileName=`henchi-${String(m.id||m.name).replace(/[^a-zA-Z0-9_-]/g,'_')}.${extension}`;
-            files.push(new AttachmentBuilder(buffer,{name:fileName}));
+      try{
+        if(m.id){
+          const image=await fetchMonsterImage(String(m.id));
+          if(image){
+            const extension=image.contentType.includes('png')?'png':image.contentType.includes('jpeg')||image.contentType.includes('jpg')?'jpg':'webp';
+            const fileName=`henchi-${String(m.id).replace(/[^a-zA-Z0-9_-]/g,'_')}.${extension}`;
+            files.push(new AttachmentBuilder(image.buffer,{name:fileName}));
             embed.setImage(`attachment://${fileName}`);
           }
-        }catch(error){ console.error(`Failed to load monster image for ${m.name}:`,error); }
+        }
+      }catch(error){
+        console.error(`Failed to load monster image for ${m.name}:`,error);
       }
       embeds.push(embed);
     }
