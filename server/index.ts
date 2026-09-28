@@ -480,7 +480,12 @@ async function startServer() {
       const query = typeof req.query.query === "string" ? req.query.query.trim().toLowerCase() : "";
       const monsters = await loadMonsterData(MONSTERS_FILE_PATH);
       const found = monsters.filter((monster) => !query || String(monster.name || "").toLowerCase().includes(query) || String(monster.id || "").toLowerCase() === query).slice(0, 20);
-      res.json({ monsters: found.map(snapshotOf) });
+      const protectedMonsters = protectMonsterImageUrls(found);
+      res.json({ monsters: protectedMonsters.map((monster) => ({
+        ...snapshotOf(monster),
+        habitat: monster.habitat ? String(monster.habitat) : null,
+        imageUrl: monster.imageUrl ? String(monster.imageUrl) : null,
+      })) });
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "몬스터 조회 실패" });
     }
