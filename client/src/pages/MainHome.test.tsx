@@ -48,7 +48,8 @@ describe('MainHome', () => {
     expect(screen.queryByTestId('abyss-android-download-trigger')).not.toBeInTheDocument();
     expect(screen.queryByTestId('abyss-android-apk-download')).not.toBeInTheDocument();
     expect(screen.queryByRole('dialog', { name: 'ABYSS 앱 다운로드' })).not.toBeInTheDocument();
-    expect(screen.getByTestId('abyss-windows-portable-download')).toHaveAttribute('href', '/manus-storage/ABYSS-MixSite-Portable-v1.0.5-Update_4ee54cb6.zip');
+    expect(screen.getByTestId('abyss-discord-link')).toHaveAttribute('href', '/discord');
+    expect(screen.getByRole('link', { name: /디스코드 연동하기/ })).toBeInTheDocument();
     const attributeOverview = screen.getByRole('region', { name: '속성별 헨치 현황' });
     expect(within(attributeOverview).queryByRole('link')).not.toBeInTheDocument();
     expect(within(attributeOverview).getByText('드래곤')).toBeInTheDocument();

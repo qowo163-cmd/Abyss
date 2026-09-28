@@ -6,7 +6,7 @@ import {
   Calculator,
   ChevronRight,
   Compass,
-  Download,
+  MessageCircle,
   GitBranch,
   Heart,
   Layers3,
@@ -73,7 +73,6 @@ const QUICK_LINKS = [
   { label: '건의사항', href: '/feedback', icon: Sparkles },
 ] as const;
 
-const WINDOWS_PORTABLE_UPDATE_URL = '/manus-storage/ABYSS-MixSite-Portable-v1.0.5-Update_4ee54cb6.zip';
 
 const ACCENT_STYLES = {
   cyan: {
@@ -144,15 +143,14 @@ export default function MainHome() {
           <section data-testid="abyss-home-hero-card" className="relative overflow-hidden rounded-[2rem] border border-cyan-100/20 bg-slate-950/42 px-6 py-8 shadow-2xl shadow-slate-950/40 backdrop-blur-md sm:px-8 sm:py-10">
             <img data-testid="abyss-home-mascot-background" src="/manus-storage/abyss-home-mascot_a3e91255.png" alt="출발점 마스코트 배경 장식" className="pointer-events-none absolute -right-12 bottom-0 h-52 w-60 select-none rounded-[3rem] object-cover opacity-[0.16] mix-blend-screen [mask-image:linear-gradient(to_top,black_30%,transparent_92%)] sm:right-4 sm:h-72 sm:w-80" decoding="async" />
             <div className="relative z-10 mb-6 flex justify-end sm:absolute sm:right-7 sm:top-7 sm:mb-0">
-              <a
-                data-testid="abyss-windows-portable-download"
-                href={WINDOWS_PORTABLE_UPDATE_URL}
-                download="ABYSS-MixSite-Portable-Alert-Update.zip"
+              <Link
+                data-testid="abyss-discord-link"
+                href="/discord"
                 className="group inline-flex items-center gap-2 rounded-xl border border-violet-100/30 bg-slate-950/55 px-3.5 py-2.5 text-xs font-extrabold text-violet-50 shadow-lg shadow-slate-950/30 transition duration-200 hover:border-violet-100/70 hover:bg-violet-300/15 active:scale-[0.97]"
               >
-                <Download className="h-4 w-4 text-violet-200 transition-transform duration-200 group-hover:-translate-y-0.5" />
-                Windows PC 프로그램
-              </a>
+                <MessageCircle className="h-4 w-4 text-violet-200 transition-transform duration-200 group-hover:scale-110" />
+                디스코드 연동하기
+              </Link>
             </div>
             <div className="relative grid gap-8 xl:grid-cols-[minmax(0,1.25fr)_minmax(17rem,.75fr)] xl:items-end xl:gap-12">
               <div className="abyss-hero-copy max-w-3xl">
