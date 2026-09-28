@@ -72,7 +72,6 @@ async function handle(i:ChatInputCommandInteraction){
       const embed=new EmbedBuilder().setTitle(`📖 ${m.name}`).setColor(0x22d3ee).addFields(
         {name:'📍 서식지',value:String(m.habitat||'정보 없음'),inline:false},
         {name:'속성',value:String(m.attribute||'-'),inline:true},
-        {name:'종류',value:String(m.type||'-'),inline:true},
         {name:'공격 타입',value:String(m.type||'정보 없음'),inline:true},
         {name:'레벨',value:levelText,inline:true},
       );
