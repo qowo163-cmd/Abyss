@@ -91,9 +91,12 @@ function snapshotOf(monster: MonsterSnapshotSource) {
   return {
     id: String(monster.id || ""),
     name: String(monster.name || ""),
+    habitat: monster.habitat ? String(monster.habitat) : null,
     attribute: monster.attribute ? String(monster.attribute) : null,
     type: monster.type ? String(monster.type) : null,
-    level: monster.level ? String(monster.level) : null,
+    level: monster.level != null ? String(monster.level) : null,
+    baseLevel: monster.baseLevel != null ? String(monster.baseLevel) : null,
+    maxLevel: monster.maxLevel != null ? String(monster.maxLevel) : null,
   };
 }
 
@@ -101,7 +104,7 @@ function snapshotChanged(before: MonsterSnapshotSource | undefined, after: Monst
   if (!before) return true;
   const previous = snapshotOf(before);
   const next = snapshotOf(after);
-  return previous.id !== next.id || previous.name !== next.name || previous.attribute !== next.attribute || previous.type !== next.type || previous.level !== next.level;
+  return previous.id !== next.id || previous.name !== next.name || previous.habitat !== next.habitat || previous.attribute !== next.attribute || previous.type !== next.type || previous.level !== next.level || previous.baseLevel !== next.baseLevel || previous.maxLevel !== next.maxLevel;
 }
 
 async function syncMarketplaceMonsterSnapshots(before: MonsterSnapshotSource[], after: MonsterSnapshotSource[]) {

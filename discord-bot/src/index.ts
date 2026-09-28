@@ -1,5 +1,5 @@
 import "dotenv/config";
-import { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, AttachmentBuilder, ChatInputCommandInteraction } from "discord.js";
+import { Client, GatewayIntentBits, REST, Routes, SlashCommandBuilder, EmbedBuilder, ChatInputCommandInteraction } from "discord.js";
 
 const TOKEN = process.env.DISCORD_TOKEN!;
 const CLIENT_ID = process.env.DISCORD_CLIENT_ID!;
@@ -19,17 +19,6 @@ async function linked(interaction:ChatInputCommandInteraction) {
   if(!data.member) throw new Error("먼저 /link 명령어로 Abyss 계정을 연동해 주세요.");
   return data.member;
 }
-async function fetchMonsterImage(monsterId:string) {
-  const response=await fetch(`${API}/api/internal/discord/monster-image/${encodeURIComponent(monsterId)}`, {
-    method:"GET",
-    headers:{"x-abyss-discord-secret":SECRET},
-  });
-  if(!response.ok) return null;
-  const contentType=response.headers.get("content-type")||"image/webp";
-  const buffer=Buffer.from(await response.arrayBuffer());
-  if(!buffer.length) return null;
-  return {buffer,contentType};
-}
 async function monster(name:string) {
   const data=await api(`/api/internal/discord/monsters?query=${encodeURIComponent(name)}`, { method:"GET" });
   const list=data.monsters||[];
@@ -40,7 +29,7 @@ async function monster(name:string) {
 async function registerCommands(){
   const rest=new REST({version:"10"}).setToken(TOKEN);
   const commands=[
-    new SlashCommandBuilder().setName("henchi").setNameLocalizations({ko:"헨치검색"}).setDescription("헨치를 검색하고 서식지와 이미지를 확인합니다.").setDescriptionLocalizations({ko:"헨치를 검색하고 서식지와 이미지를 확인합니다."}).addStringOption(o=>o.setName("query").setNameLocalizations({ko:"헨치"}).setDescription("검색할 헨치 이름").setDescriptionLocalizations({ko:"검색할 헨치 이름"}).setRequired(true)),
+    new SlashCommandBuilder().setName("henchi").setNameLocalizations({ko:"헨치검색"}).setDescription("헨치를 검색하고 서식지와 레벨을 확인합니다.").setDescriptionLocalizations({ko:"헨치를 검색하고 서식지와 레벨을 확인합니다."}).addStringOption(o=>o.setName("query").setNameLocalizations({ko:"헨치"}).setDescription("검색할 헨치 이름").setDescriptionLocalizations({ko:"검색할 헨치 이름"}).setRequired(true)),
     new SlashCommandBuilder().setName("link").setNameLocalizations({ko:"연동"}).setDescription("Abyss 계정과 Discord 계정을 연동합니다.").setDescriptionLocalizations({ko:"Abyss 계정과 Discord 계정을 연동합니다."}).addStringOption(o=>o.setName("code").setNameLocalizations({ko:"코드"}).setDescription("사이트에서 생성한 10분 연동 코드").setDescriptionLocalizations({ko:"사이트에서 생성한 10분 연동 코드"}).setRequired(true)),
     new SlashCommandBuilder().setName("market").setNameLocalizations({ko:"거래소"}).setDescription("Abyss 판매 거래소").setDescriptionLocalizations({ko:"Abyss 판매 거래소"}).addSubcommand(s=>s.setName("search").setNameLocalizations({ko:"검색"}).setDescription("판매글을 조회합니다").setDescriptionLocalizations({ko:"판매글을 조회합니다"}).addStringOption(o=>o.setName("query").setNameLocalizations({ko:"검색어"}).setDescription("헨치 이름").setDescriptionLocalizations({ko:"헨치 이름"}))).addSubcommand(s=>s.setName("create").setNameLocalizations({ko:"등록"}).setDescription("판매글을 등록합니다").setDescriptionLocalizations({ko:"판매글을 등록합니다"}).addStringOption(o=>o.setName("monster").setNameLocalizations({ko:"헨치"}).setDescription("헨치 이름").setDescriptionLocalizations({ko:"헨치 이름"}).setRequired(true)).addIntegerOption(o=>o.setName("quantity").setNameLocalizations({ko:"수량"}).setDescription("수량").setDescriptionLocalizations({ko:"수량"}).setMinValue(1).setRequired(true)).addIntegerOption(o=>o.setName("price").setNameLocalizations({ko:"가격"}).setDescription("마리당 자사 가격").setDescriptionLocalizations({ko:"마리당 자사 가격"}).setMinValue(1).setRequired(true)).addStringOption(o=>o.setName("note").setNameLocalizations({ko:"메모"}).setDescription("메모").setDescriptionLocalizations({ko:"메모"}).setMaxLength(300))).addSubcommand(s=>s.setName("mine").setNameLocalizations({ko:"내거래"}).setDescription("내 판매글을 조회합니다").setDescriptionLocalizations({ko:"내 판매글을 조회합니다"})).addSubcommand(s=>s.setName("cancel").setNameLocalizations({ko:"취소"}).setDescription("내 판매글을 취소합니다").setDescriptionLocalizations({ko:"내 판매글을 취소합니다"}).addStringOption(o=>o.setName("id").setNameLocalizations({ko:"거래아이디"}).setDescription("거래 ID").setDescriptionLocalizations({ko:"거래 ID"}).setRequired(true))),
     new SlashCommandBuilder().setName("exchange").setNameLocalizations({ko:"교환소"}).setDescription("Abyss 교환 거래소").setDescriptionLocalizations({ko:"Abyss 교환 거래소"}).addSubcommand(s=>s.setName("search").setNameLocalizations({ko:"검색"}).setDescription("교환글을 조회합니다").setDescriptionLocalizations({ko:"교환글을 조회합니다"}).addStringOption(o=>o.setName("query").setNameLocalizations({ko:"검색어"}).setDescription("헨치 이름").setDescriptionLocalizations({ko:"헨치 이름"}))).addSubcommand(s=>s.setName("create").setNameLocalizations({ko:"등록"}).setDescription("교환글을 등록합니다").setDescriptionLocalizations({ko:"교환글을 등록합니다"}).addStringOption(o=>o.setName("offered").setNameLocalizations({ko:"제공헨치"}).setDescription("내가 줄 헨치").setDescriptionLocalizations({ko:"내가 줄 헨치"}).setRequired(true)).addIntegerOption(o=>o.setName("quantity").setNameLocalizations({ko:"수량"}).setDescription("내가 줄 수량").setDescriptionLocalizations({ko:"내가 줄 수량"}).setMinValue(1).setRequired(true)).addStringOption(o=>o.setName("wants").setNameLocalizations({ko:"원하는헨치"}).setDescription("원하는 헨치:수량,헨치:수량").setDescriptionLocalizations({ko:"원하는 헨치:수량,헨치:수량"}).setRequired(true)).addStringOption(o=>o.setName("note").setNameLocalizations({ko:"메모"}).setDescription("메모").setDescriptionLocalizations({ko:"메모"}).setMaxLength(300))).addSubcommand(s=>s.setName("mine").setNameLocalizations({ko:"내거래"}).setDescription("내 교환글/제안을 조회합니다").setDescriptionLocalizations({ko:"내 교환글과 제안을 조회합니다"})).addSubcommand(s=>s.setName("cancel").setNameLocalizations({ko:"취소"}).setDescription("내 교환글을 취소합니다").setDescriptionLocalizations({ko:"내 교환글을 취소합니다"}).addStringOption(o=>o.setName("id").setNameLocalizations({ko:"교환아이디"}).setDescription("교환글 ID").setDescriptionLocalizations({ko:"교환글 ID"}).setRequired(true))),
@@ -70,31 +59,27 @@ async function handle(i:ChatInputCommandInteraction){
     const exact=list.filter((m:any)=>String(m.name||'').toLowerCase()===query.toLowerCase());
     const results=exact.length?exact:list.slice(0,8);
     const embeds:EmbedBuilder[]=[];
-    const files:AttachmentBuilder[]=[];
     for(const m of results){
+      const baseLevel = m.baseLevel ?? m.level;
+      const maxLevel = m.maxLevel;
+      const levelText = baseLevel != null && maxLevel != null
+        ? `${baseLevel} ~ ${maxLevel}`
+        : baseLevel != null
+          ? String(baseLevel)
+          : maxLevel != null
+            ? String(maxLevel)
+            : '정보 없음';
       const embed=new EmbedBuilder().setTitle(`📖 ${m.name}`).setColor(0x22d3ee).addFields(
         {name:'📍 서식지',value:String(m.habitat||'정보 없음'),inline:false},
         {name:'속성',value:String(m.attribute||'-'),inline:true},
         {name:'종류',value:String(m.type||'-'),inline:true},
-        {name:'레벨',value:String(m.level||'-'),inline:true},
+        {name:'공격 타입',value:String(m.type||'정보 없음'),inline:true},
+        {name:'레벨',value:levelText,inline:true},
       );
-      try{
-        if(m.id){
-          const image=await fetchMonsterImage(String(m.id));
-          if(image){
-            const extension=image.contentType.includes('png')?'png':image.contentType.includes('jpeg')||image.contentType.includes('jpg')?'jpg':'webp';
-            const fileName=`henchi-${String(m.id).replace(/[^a-zA-Z0-9_-]/g,'_')}.${extension}`;
-            files.push(new AttachmentBuilder(image.buffer,{name:fileName}));
-            embed.setImage(`attachment://${fileName}`);
-          }
-        }
-      }catch(error){
-        console.error(`Failed to load monster image for ${m.name}:`,error);
-      }
       embeds.push(embed);
     }
     if(!exact.length && results.length>1) embeds[0].setFooter({text:`검색 결과 ${list.length}개 · 정확한 이름을 입력하면 해당 헨치만 표시됩니다.`});
-    return i.reply({embeds:embeds.slice(0,8),files});
+    return i.reply({embeds:embeds.slice(0,8)});
   }
   if(i.commandName==='link'){ const data=await api('/api/internal/discord/link',{method:'POST',body:JSON.stringify({code:i.options.getString('code',true),discordUserId:i.user.id,discordUsername:i.user.username})}); return i.reply({content:`✅ ${data.member.nickname} 계정과 연동되었습니다. 이제 /market, /exchange를 사용할 수 있습니다.`,ephemeral:true}); }
   const member=await linked(i); const group=i.commandName; const sub=i.options.getSubcommand();
