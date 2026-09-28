@@ -68,7 +68,7 @@ import {
   type PublicMember,
 } from "./memberAuth.js";
 import { sendMarketplaceRequestPushAlert } from "./marketplacePushNotifications.js";
-import { createDiscordLinkCode, enqueueDiscordMarketplaceAlert, internalLink, internalMarketplace } from "./discordIntegration.js";
+import { createDiscordLinkCode, enqueueDiscordMarketplaceAlert, ensureDiscordDatabase, internalLink, internalMarketplace, markDiscordNotificationSent, pollDiscordNotifications } from "./discordIntegration.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -452,6 +452,7 @@ async function startServer() {
   app.get("/api/internal/discord/link/by-user/:discordUserId", async (req, res) => {
     if (!process.env.DISCORD_INTERNAL_SECRET || req.headers["x-abyss-discord-secret"] !== process.env.DISCORD_INTERNAL_SECRET) return res.status(403).json({ error: "FORBIDDEN" });
     try {
+      await ensureDiscordDatabase();
       const mysql = await import("mysql2/promise"); const pool = mysql.createPool(process.env.DATABASE_URL!);
       const [rows] = await pool.query(`SELECT m.id,m.nickname,m.game_nickname AS gameNickname FROM discord_links d INNER JOIN member_accounts m ON m.id=d.member_id WHERE d.discord_user_id=? AND m.status='approved' LIMIT 1`, [req.params.discordUserId]);
       await pool.end(); const row = Array.isArray(rows) ? rows[0] : undefined; res.json({ member: row ? { id:String((row as any).id), nickname:String((row as any).nickname), gameNickname:String((row as any).gameNickname) } : null });
@@ -459,11 +460,17 @@ async function startServer() {
   });
   app.get("/api/internal/discord/notifications", async (req,res) => {
     if (!process.env.DISCORD_INTERNAL_SECRET || req.headers["x-abyss-discord-secret"] !== process.env.DISCORD_INTERNAL_SECRET) return res.status(403).json({error:"FORBIDDEN"});
-    try { const mysql=await import("mysql2/promise"); const pool=mysql.createPool(process.env.DATABASE_URL!); const [rows]=await pool.query(`SELECT n.id,n.title,n.body,n.kind,l.discord_user_id AS discordUserId FROM discord_notifications n INNER JOIN discord_links l ON l.member_id=n.recipient_member_id WHERE n.sent_at IS NULL ORDER BY n.created_at ASC LIMIT 20`); await pool.end(); res.json({notifications:Array.isArray(rows)?rows:[]}); } catch(error){res.status(500).json({error:error instanceof Error?error.message:'알림 조회 실패'});}
+    try {
+      const notifications = await pollDiscordNotifications(20);
+      res.json({notifications});
+    } catch(error) { res.status(500).json({error:error instanceof Error?error.message:'알림 조회 실패'}); }
   });
   app.post("/api/internal/discord/notifications/sent", async (req,res) => {
     if (!process.env.DISCORD_INTERNAL_SECRET || req.headers["x-abyss-discord-secret"] !== process.env.DISCORD_INTERNAL_SECRET) return res.status(403).json({error:"FORBIDDEN"});
-    try { const mysql=await import("mysql2/promise"); const pool=mysql.createPool(process.env.DATABASE_URL!); await pool.execute("UPDATE discord_notifications SET sent_at=NOW() WHERE id=? AND sent_at IS NULL",[String(req.body?.id||"")]); await pool.end(); res.json({ok:true}); } catch(error){res.status(500).json({error:error instanceof Error?error.message:'처리 실패'});}
+    try {
+      await markDiscordNotificationSent(String(req.body?.id||""));
+      res.json({ok:true});
+    } catch(error) { res.status(500).json({error:error instanceof Error?error.message:'처리 실패'}); }
   });
   app.get("/api/internal/discord/monsters", async (req, res) => {
     if (!process.env.DISCORD_INTERNAL_SECRET || req.headers["x-abyss-discord-secret"] !== process.env.DISCORD_INTERNAL_SECRET) {

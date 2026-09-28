@@ -99,11 +99,19 @@ export async function pollDiscordNotifications(limit=20) {
 }
 export async function markDiscordNotificationSent(id:string) { await (await readyDb()).execute("UPDATE discord_notifications SET sent_at=NOW() WHERE id=? AND sent_at IS NULL", [id]); }
 
+export async function ensureDiscordDatabase() {
+  await readyDb();
+}
+
 export async function internalLink(req:any, res:any) { try { assertInternal(req); const code=String(req.body?.code||""); const userId=String(req.body?.discordUserId||""); const username=String(req.body?.discordUsername||""); if(!code||!userId) throw new MemberAuthError("INVALID_INPUT","연동 코드와 Discord 사용자 ID가 필요합니다."); const member=await consumeDiscordLinkCode(code,userId,username); res.json({member:{id:member.id,nickname:member.nickname,gameNickname:member.gameNickname}}); } catch(e){ res.status(e instanceof MemberAuthError ? (e.code==='FORBIDDEN'?403:400):500).json({error:e instanceof Error?e.message:"연동 실패"}); } }
 
 async function memberOrThrow(memberId:string):Promise<PublicMember>{ const member=await findMemberById(memberId); if(!member || member.status!=="approved") throw new MemberAuthError("FORBIDDEN","승인된 회원만 Discord 거래소 기능을 사용할 수 있습니다."); return member; }
 export async function internalMarketplace(req:any,res:any){
-  try { assertInternal(req); const member=await memberOrThrow(String(req.body?.memberId||req.query?.memberId||"")); const action=String(req.body?.action||req.query?.action||"");
+  try {
+    assertInternal(req);
+    // 거래소 API가 처음 호출될 때도 Discord 전용 DB 스키마가 먼저 준비되도록 합니다.
+    await readyDb();
+    const member=await memberOrThrow(String(req.body?.memberId||req.query?.memberId||"")); const action=String(req.body?.action||req.query?.action||"");
     if(action==='sell-list') return res.json({listings:await listMarketplaceListings(String(req.body?.query||req.query?.query||""))});
     if(action==='exchange-list') return res.json({exchanges:await listExchangeListings(String(req.body?.query||req.query?.query||""))});
     if(action==='my-sell') return res.json({listings:await listMyMarketplaceListings(member.id)});
