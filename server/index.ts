@@ -484,7 +484,11 @@ async function startServer() {
       res.json({ monsters: protectedMonsters.map((monster) => ({
         ...snapshotOf(monster),
         habitat: monster.habitat ? String(monster.habitat) : null,
-        imageUrl: monster.imageUrl ? String(monster.imageUrl) : null,
+        imageUrl: monster.imageUrl
+          ? (String(monster.imageUrl).startsWith("/")
+            ? `${req.protocol}://${req.get("host")}${String(monster.imageUrl)}`
+            : String(monster.imageUrl))
+          : null,
       })) });
     } catch (error) {
       res.status(500).json({ error: error instanceof Error ? error.message : "몬스터 조회 실패" });
