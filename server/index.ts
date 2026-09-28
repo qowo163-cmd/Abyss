@@ -68,6 +68,7 @@ import {
   type PublicMember,
 } from "./memberAuth.js";
 import { sendMarketplaceRequestPushAlert } from "./marketplacePushNotifications.js";
+import { createDiscordLinkCode, enqueueDiscordMarketplaceAlert, internalLink, internalMarketplace } from "./discordIntegration.js";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -253,6 +254,9 @@ function broadcastMarketplace(requestAlert?: MarketplaceRequestAlert) {
     void sendMarketplaceRequestPushAlert(requestAlert).catch((error) => {
       console.error("Failed to send marketplace device push notification:", error);
     });
+    void enqueueDiscordMarketplaceAlert(requestAlert).catch((error) => {
+      console.error("Failed to enqueue Discord marketplace notification:", error);
+    });
   }
 }
 
@@ -432,6 +436,46 @@ async function startServer() {
       res.json({ member, message: `${member.username} 계정을 탈퇴 처리했습니다.` });
     } catch (error) {
       respondMemberAuthError(res, error);
+    }
+  });
+
+  app.post("/api/auth/discord-link-code", async (req: RequestWithMember, res) => {
+    try {
+      const member = await getMemberFromToken(getSessionTokenFromHeader(req.headers.cookie, req.headers.authorization));
+      if (!member) return res.status(401).json({ error: "UNAUTHORIZED", message: "로그인이 필요합니다." });
+      res.json({ code: await createDiscordLinkCode(member.id), expiresInSeconds: 600 });
+    } catch (error) { respondMemberAuthError(res, error); }
+  });
+
+  app.post("/api/internal/discord/link", internalLink);
+  app.post("/api/internal/discord/marketplace", internalMarketplace);
+  app.get("/api/internal/discord/link/by-user/:discordUserId", async (req, res) => {
+    if (!process.env.DISCORD_INTERNAL_SECRET || req.headers["x-abyss-discord-secret"] !== process.env.DISCORD_INTERNAL_SECRET) return res.status(403).json({ error: "FORBIDDEN" });
+    try {
+      const mysql = await import("mysql2/promise"); const pool = mysql.createPool(process.env.DATABASE_URL!);
+      const [rows] = await pool.query(`SELECT m.id,m.nickname,m.game_nickname AS gameNickname FROM discord_links d INNER JOIN member_accounts m ON m.id=d.member_id WHERE d.discord_user_id=? AND m.status='approved' LIMIT 1`, [req.params.discordUserId]);
+      await pool.end(); const row = Array.isArray(rows) ? rows[0] : undefined; res.json({ member: row ? { id:String((row as any).id), nickname:String((row as any).nickname), gameNickname:String((row as any).gameNickname) } : null });
+    } catch(error) { res.status(500).json({error:error instanceof Error?error.message:'조회 실패'}); }
+  });
+  app.get("/api/internal/discord/notifications", async (req,res) => {
+    if (!process.env.DISCORD_INTERNAL_SECRET || req.headers["x-abyss-discord-secret"] !== process.env.DISCORD_INTERNAL_SECRET) return res.status(403).json({error:"FORBIDDEN"});
+    try { const mysql=await import("mysql2/promise"); const pool=mysql.createPool(process.env.DATABASE_URL!); const [rows]=await pool.query(`SELECT n.id,n.title,n.body,n.kind,l.discord_user_id AS discordUserId FROM discord_notifications n INNER JOIN discord_links l ON l.member_id=n.recipient_member_id WHERE n.sent_at IS NULL ORDER BY n.created_at ASC LIMIT 20`); await pool.end(); res.json({notifications:Array.isArray(rows)?rows:[]}); } catch(error){res.status(500).json({error:error instanceof Error?error.message:'알림 조회 실패'});}
+  });
+  app.post("/api/internal/discord/notifications/sent", async (req,res) => {
+    if (!process.env.DISCORD_INTERNAL_SECRET || req.headers["x-abyss-discord-secret"] !== process.env.DISCORD_INTERNAL_SECRET) return res.status(403).json({error:"FORBIDDEN"});
+    try { const mysql=await import("mysql2/promise"); const pool=mysql.createPool(process.env.DATABASE_URL!); await pool.execute("UPDATE discord_notifications SET sent_at=NOW() WHERE id=? AND sent_at IS NULL",[String(req.body?.id||"")]); await pool.end(); res.json({ok:true}); } catch(error){res.status(500).json({error:error instanceof Error?error.message:'처리 실패'});}
+  });
+  app.get("/api/internal/discord/monsters", async (req, res) => {
+    if (!process.env.DISCORD_INTERNAL_SECRET || req.headers["x-abyss-discord-secret"] !== process.env.DISCORD_INTERNAL_SECRET) {
+      return res.status(403).json({ error: "FORBIDDEN" });
+    }
+    try {
+      const query = typeof req.query.query === "string" ? req.query.query.trim().toLowerCase() : "";
+      const monsters = await loadMonsterData(MONSTERS_FILE_PATH);
+      const found = monsters.filter((monster) => !query || String(monster.name || "").toLowerCase().includes(query) || String(monster.id || "").toLowerCase() === query).slice(0, 20);
+      res.json({ monsters: found.map(snapshotOf) });
+    } catch (error) {
+      res.status(500).json({ error: error instanceof Error ? error.message : "몬스터 조회 실패" });
     }
   });
 
