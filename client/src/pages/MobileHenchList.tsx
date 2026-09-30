@@ -171,7 +171,19 @@ export default function MobileHenchList() {
                   <div className="flex items-start justify-between gap-2 mb-1">
                     <div>
                       <p className="font-semibold text-slate-200 text-sm truncate">{monster.name}</p>
-                      <p className="text-xs text-cyan-400 font-bold">{monster.attribute}</p>
+                      <div className="flex items-center gap-1.5">
+                        <p className="text-xs text-cyan-400 font-bold">{monster.attribute}</p>
+                        {monster.type && (
+                          <span className={cn(
+                            'rounded px-1 py-px text-[10px] font-bold border',
+                            monster.type === '장코'
+                              ? 'border-amber-500/40 bg-amber-500/20 text-amber-300'
+                              : 'border-sky-500/40 bg-sky-500/20 text-sky-300',
+                          )}>
+                            {monster.type}
+                          </span>
+                        )}
+                      </div>
                     </div>
                     <button
                       onClick={() => toggleFavorite(monster.id)}

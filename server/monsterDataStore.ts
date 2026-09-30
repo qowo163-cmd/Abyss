@@ -76,9 +76,16 @@ export async function loadMonsterData(fallbackPath: string): Promise<MonsterReco
   return result;
 }
 
+function normalizeMonsterName(value: unknown): string {
+  return String(value ?? "")
+    .trim()
+    .toLowerCase()
+    .replace(/\s+/g, "");
+}
+
 function fillMissingMonsterTypes(stored: MonsterRecord[], fallback: MonsterRecord[]): MonsterRecord[] {
   const fallbackById = new Map(fallback.map((monster) => [String(monster.id || ""), monster]));
-  const fallbackByName = new Map(fallback.map((monster) => [String(monster.name || "").trim().toLowerCase(), monster]));
+  const fallbackByName = new Map(fallback.map((monster) => [normalizeMonsterName(monster.name), monster]));
   let changed = false;
 
   const merged = stored.map((monster) => {
@@ -86,7 +93,7 @@ function fillMissingMonsterTypes(stored: MonsterRecord[], fallback: MonsterRecor
     if (currentType === "장코" || currentType === "단코") return monster;
 
     const fallbackMonster = fallbackById.get(String(monster.id || ""))
-      || fallbackByName.get(String(monster.name || "").trim().toLowerCase());
+      || fallbackByName.get(normalizeMonsterName(monster.name));
     const fallbackType = String(fallbackMonster?.type || "").trim();
     if (fallbackType !== "장코" && fallbackType !== "단코") return monster;
 
