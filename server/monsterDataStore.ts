@@ -76,12 +76,41 @@ export async function loadMonsterData(fallbackPath: string): Promise<MonsterReco
   return result;
 }
 
+function fillMissingMonsterTypes(stored: MonsterRecord[], fallback: MonsterRecord[]): MonsterRecord[] {
+  const fallbackById = new Map(fallback.map((monster) => [String(monster.id || ""), monster]));
+  const fallbackByName = new Map(fallback.map((monster) => [String(monster.name || "").trim().toLowerCase(), monster]));
+  let changed = false;
+
+  const merged = stored.map((monster) => {
+    const currentType = String(monster.type || "").trim();
+    if (currentType === "장코" || currentType === "단코") return monster;
+
+    const fallbackMonster = fallbackById.get(String(monster.id || ""))
+      || fallbackByName.get(String(monster.name || "").trim().toLowerCase());
+    const fallbackType = String(fallbackMonster?.type || "").trim();
+    if (fallbackType !== "장코" && fallbackType !== "단코") return monster;
+
+    changed = true;
+    return { ...monster, type: fallbackType };
+  });
+
+  return changed ? merged : stored;
+}
+
 async function loadMonsterDataUncached(fallbackPath: string): Promise<MonsterRecord[]> {
   if (persistentStoreEnabled() && (process.env.DATABASE_URL || testPool)) {
     try {
       const stored = await readDatabase();
-      if (stored) return stored;
       const fallback = readJsonFile(fallbackPath);
+      if (stored) {
+        // 기존 Railway DB에 저장된 오래된 레코드 중 type(장코/단코)이 빠진 경우
+        // 현재 검증된 JSON의 값을 기준으로 자동 보완합니다.
+        const enriched = fillMissingMonsterTypes(stored, fallback);
+        if (enriched !== stored) {
+          await writeDatabase(enriched);
+        }
+        return enriched;
+      }
       if (fallback.length > 0) {
         await writeDatabase(fallback);
       }

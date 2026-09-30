@@ -13,6 +13,7 @@ interface Monster {
   main2?: string | null;
   sub2?: string | null;
   attribute: string;
+  type?: '장코' | '단코' | string;
   baseLevel?: number;
   maxLevel?: number;
   acquired: string;
@@ -139,9 +140,22 @@ export default function ReverseRecipe() {
 
             {/* 몬스터 정보 */}
             <div className="flex-1 min-w-0">
-              <p className="text-xs sm:text-sm font-semibold text-cyan-300">
-                {node.monster.name}
-              </p>
+              <div className="flex flex-wrap items-center gap-2">
+                <p className="text-xs sm:text-sm font-semibold text-cyan-300">
+                  {node.monster.name}
+                </p>
+                {node.monster.type && (
+                  <span
+                    className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${
+                      node.monster.type === '장코'
+                        ? 'border-amber-500 bg-amber-100 text-amber-800'
+                        : 'border-sky-500 bg-sky-100 text-sky-800'
+                    }`}
+                  >
+                    {node.monster.type}
+                  </span>
+                )}
+              </div>
               <p className="text-xs text-slate-400">
                 Lv.{node.monster.baseLevel || 0}~{node.monster.maxLevel || 0}
               </p>
@@ -216,7 +230,10 @@ export default function ReverseRecipe() {
                     className="h-6 w-6 rounded-full object-cover"
                   />
                   <div className="flex-1">
-                    <p className="text-white font-semibold text-sm">{monster.name}</p>
+                    <div className="flex items-center gap-2">
+                      <p className="text-white font-semibold text-sm">{monster.name}</p>
+                      {monster.type && <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${monster.type === '장코' ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-sky-500 bg-sky-100 text-sky-800'}`}>{monster.type}</span>}
+                    </div>
                     <p className="text-xs text-slate-400">
                       Lv.{monster.baseLevel || 0}~{monster.maxLevel || 0} | {monster.attribute}
                     </p>
@@ -250,7 +267,10 @@ export default function ReverseRecipe() {
                   className="h-12 w-12 rounded-full object-cover"
                 />
                 <div className="flex-1">
-                  <p className="text-white font-semibold text-lg">{selectedMonster.name}</p>
+                  <div className="flex items-center gap-2">
+                    <p className="text-white font-semibold text-lg">{selectedMonster.name}</p>
+                    {selectedMonster.type && <span className={`rounded-md border px-2 py-0.5 text-xs font-bold ${selectedMonster.type === '장코' ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-sky-500 bg-sky-100 text-sky-800'}`}>{selectedMonster.type}</span>}
+                  </div>
                   <p className="text-sm text-slate-400">
                     Lv.{selectedMonster.baseLevel || 0}~{selectedMonster.maxLevel || 0} | {selectedMonster.attribute}
                   </p>
