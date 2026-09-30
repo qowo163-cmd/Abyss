@@ -277,6 +277,136 @@ function canRecordSecurityEvent(memberId: string, eventType: unknown) {
   return true;
 }
 
+
+type RailwayDeploymentWebhookPayload = {
+  type?: unknown;
+  timestamp?: unknown;
+  severity?: unknown;
+  details?: {
+    id?: unknown;
+    source?: unknown;
+    status?: unknown;
+    branch?: unknown;
+    commitHash?: unknown;
+    commitMessage?: unknown;
+  };
+  resource?: {
+    project?: { id?: unknown; name?: unknown };
+    environment?: { id?: unknown; name?: unknown; isEphemeral?: unknown };
+    service?: { id?: unknown; name?: unknown };
+    deployment?: { id?: unknown };
+  };
+};
+
+type GitHubCommitFile = { filename?: string };
+type GitHubCommitResponse = {
+  commit?: { message?: unknown };
+  html_url?: unknown;
+  files?: GitHubCommitFile[];
+};
+
+function readRailwayWebhookSecret(req: import("express").Request) {
+  const querySecret = typeof req.query.secret === "string" ? req.query.secret : "";
+  const headerSecret = typeof req.headers["x-abyss-webhook-secret"] === "string" ? req.headers["x-abyss-webhook-secret"] : "";
+  return querySecret || headerSecret;
+}
+
+function isRailwayDeploymentSuccess(payload: RailwayDeploymentWebhookPayload) {
+  const status = String(payload.details?.status ?? "").toUpperCase();
+  const source = String(payload.details?.source ?? "").toLowerCase();
+  if (status !== "SUCCESS") return false;
+  if (source && source !== "github") return false;
+  const environment = payload.resource?.environment;
+  if (environment?.isEphemeral === true) return false;
+  const requiredEnvironment = String(process.env.AUTO_SITE_UPDATE_ENVIRONMENT || "").trim().toLowerCase();
+  if (requiredEnvironment && String(environment?.name || "").trim().toLowerCase() !== requiredEnvironment) return false;
+  const requiredService = String(process.env.AUTO_SITE_UPDATE_SERVICE || "").trim().toLowerCase();
+  if (requiredService && String(payload.resource?.service?.name || "").trim().toLowerCase() !== requiredService) return false;
+  return true;
+}
+
+function cleanCommitTitle(message: string) {
+  const firstLine = message.split(/\r?\n/, 1)[0]?.trim() || "사이트 업데이트";
+  return firstLine
+    .replace(/^\[(?:feat|fix|chore|refactor|docs|style|perf|test)\]\s*/i, "")
+    .replace(/^(?:feat|fix|chore|refactor|docs|style|perf|test)\s*:\s*/i, "")
+    .trim() || "사이트 업데이트";
+}
+
+function inferUpdateType(message: string): "feature" | "fix" | "improvement" {
+  const firstLine = message.split(/\r?\n/, 1)[0]?.trim() || "";
+  if (/^(?:\[?fix\]?|fix:|bugfix:)/i.test(firstLine)) return "fix";
+  if (/^(?:\[?feat\]?|feat:|feature:)/i.test(firstLine)) return "feature";
+  return "improvement";
+}
+
+function commitBodyChanges(message: string) {
+  const lines = message.split(/\r?\n/).slice(1).map((line) => line.trim()).filter(Boolean);
+  const changes = lines
+    .map((line) => line.replace(/^(?:[-*•]\s*)/, "").trim())
+    .filter(Boolean);
+  return Array.from(new Set(changes));
+}
+
+function humanizeChangedFiles(files: GitHubCommitFile[]) {
+  const paths = files.map((file) => String(file.filename || "").trim()).filter(Boolean);
+  const unique = Array.from(new Set(paths));
+  const categories = new Set<string>();
+  for (const file of unique) {
+    if (file.startsWith("client/src/pages/")) categories.add("사이트 화면/페이지 수정");
+    else if (file.startsWith("client/src/components/")) categories.add("공통 UI 컴포넌트 수정");
+    else if (file.startsWith("client/src/data/")) categories.add("사이트 데이터 업데이트");
+    else if (file.startsWith("server/")) categories.add("서버 기능 및 API 수정");
+    else if (file.startsWith("shared/")) categories.add("공통 로직 수정");
+    else if (file.startsWith("drizzle/")) categories.add("데이터베이스 구조/쿼리 수정");
+    else if (file.startsWith(".github/")) categories.add("배포 자동화 설정 수정");
+    else categories.add("프로젝트 설정 및 기타 수정");
+  }
+  const result = Array.from(categories);
+  if (result.length > 0) {
+    result.push(`변경 파일 ${unique.length}개`);
+  }
+  return result;
+}
+
+function nextAutomaticVersion(updates: import("./siteUpdates.js").SiteUpdateItem[]) {
+  let best: [number, number, number] | null = null;
+  for (const update of updates) {
+    const match = String(update.version).match(/^v(\d+)\.(\d+)\.(\d+)$/);
+    if (!match) continue;
+    const candidate: [number, number, number] = [Number(match[1]), Number(match[2]), Number(match[3])];
+    if (!best || candidate[0] > best[0] || (candidate[0] === best[0] && candidate[1] > best[1]) || (candidate[0] === best[0] && candidate[1] === best[1] && candidate[2] > best[2])) {
+      best = candidate;
+    }
+  }
+  if (!best) return "v1.0.0";
+  return `v${best[0]}.${best[1]}.${best[2] + 1}`;
+}
+
+async function fetchGitHubCommitDetails(commitHash: string): Promise<GitHubCommitResponse | null> {
+  const repository = String(process.env.GITHUB_REPOSITORY || "qowo163-cmd/Abyss").trim();
+  if (!repository || !commitHash) return null;
+  const controller = new AbortController();
+  const timeout = setTimeout(() => controller.abort(), 8_000);
+  try {
+    const response = await fetch(`https://api.github.com/repos/${repository}/commits/${encodeURIComponent(commitHash)}`, {
+      headers: {
+        Accept: "application/vnd.github+json",
+        "User-Agent": "Abyss-Railway-Update-Webhook",
+        "X-GitHub-Api-Version": "2022-11-28",
+      },
+      signal: controller.signal,
+    });
+    if (!response.ok) return null;
+    return await response.json() as GitHubCommitResponse;
+  } catch (error) {
+    console.warn("Failed to fetch GitHub commit details for automatic site update:", error);
+    return null;
+  } finally {
+    clearTimeout(timeout);
+  }
+}
+
 async function startServer() {
   const app = express();
   const server = createServer(app);
@@ -516,6 +646,68 @@ async function startServer() {
     } catch (error) {
       console.error("Failed to load Discord monster image:", error);
       res.status(502).end();
+    }
+  });
+
+
+  // Railway deployment webhook: record a public update only after a successful GitHub deployment.
+  // Railway webhooks are not cryptographically signed, so protect this endpoint with a secret.
+  app.post("/api/webhooks/railway/deploy", async (req, res) => {
+    const configuredSecret = String(process.env.RAILWAY_UPDATE_WEBHOOK_SECRET || "").trim();
+    if (!configuredSecret) {
+      res.status(503).json({ error: "AUTO_UPDATE_WEBHOOK_NOT_CONFIGURED" });
+      return;
+    }
+    if (readRailwayWebhookSecret(req) !== configuredSecret) {
+      res.status(401).json({ error: "UNAUTHORIZED" });
+      return;
+    }
+
+    const payload = (req.body || {}) as RailwayDeploymentWebhookPayload;
+    if (!isRailwayDeploymentSuccess(payload)) {
+      res.status(202).json({ success: true, recorded: false, reason: "deployment-not-success-or-filtered" });
+      return;
+    }
+
+    const deploymentId = String(payload.details?.id || payload.resource?.deployment?.id || "").trim();
+    const commitHash = String(payload.details?.commitHash || "").trim();
+    if (!deploymentId || !/^[0-9a-f]{7,64}$/i.test(commitHash)) {
+      res.status(202).json({ success: true, recorded: false, reason: "missing-github-commit" });
+      return;
+    }
+
+    try {
+      const existing = await listSiteUpdates();
+      const updateId = `railway-commit-${commitHash.toLowerCase()}`;
+      const previous = existing.find((item) => item.id === updateId);
+      if (previous) {
+        res.status(200).json({ success: true, recorded: false, reason: "already-recorded", update: previous });
+        return;
+      }
+      const commitDetails = await fetchGitHubCommitDetails(commitHash);
+      const commitMessage = String(commitDetails?.commit?.message || payload.details?.commitMessage || "사이트 업데이트").trim() || "사이트 업데이트";
+      const bodyChanges = commitBodyChanges(commitMessage);
+      const fileChanges = humanizeChangedFiles(commitDetails?.files || []);
+      const changes = bodyChanges.length > 0 ? bodyChanges.slice(0, 10) : fileChanges.slice(0, 10);
+      if (changes.length === 0) changes.push("GitHub 커밋이 Railway 배포에 성공했습니다.");
+
+      const shortHash = commitHash ? commitHash.slice(0, 7) : deploymentId.slice(0, 8);
+      const update = {
+        id: updateId,
+        date: String(payload.timestamp || new Date().toISOString()),
+        version: nextAutomaticVersion(existing),
+        title: cleanCommitTitle(commitMessage),
+        description: `GitHub 커밋 ${shortHash}가 Railway에서 성공적으로 배포되었습니다.`,
+        changes,
+        type: inferUpdateType(commitMessage),
+      };
+
+      const updates = await upsertSiteUpdate(update);
+      broadcastUpdates(updates);
+      res.status(200).json({ success: true, recorded: true, update });
+    } catch (error) {
+      console.error("Failed to record automatic Railway deployment update:", error);
+      res.status(500).json({ error: "AUTO_UPDATE_RECORD_FAILED" });
     }
   });
 
