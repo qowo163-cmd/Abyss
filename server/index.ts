@@ -313,8 +313,11 @@ function readRailwayWebhookSecret(req: import("express").Request) {
 
 function isRailwayDeploymentSuccess(payload: RailwayDeploymentWebhookPayload) {
   const status = String(payload.details?.status ?? "").toUpperCase();
+  const type = String(payload.type ?? "").toLowerCase();
   const source = String(payload.details?.source ?? "").toLowerCase();
-  if (status !== "SUCCESS") return false;
+  const successStatuses = new Set(["SUCCESS", "DEPLOYED", "COMPLETED"]);
+  if (!successStatuses.has(status)) return false;
+  if (type && !type.startsWith("deployment.")) return false;
   if (source && source !== "github") return false;
   const environment = payload.resource?.environment;
   if (environment?.isEphemeral === true) return false;
@@ -676,7 +679,14 @@ async function startServer() {
       process.env.RAILWAY_GIT_COMMIT_SHA ||
       "",
     ).trim();
-    if (!deploymentId || !/^[0-9a-f]{7,64}$/i.test(commitHash)) {
+    if (!/^[0-9a-f]{7,64}$/i.test(commitHash)) {
+      // Some deployment event variants may omit details.id, but a commit SHA is
+      // still sufficient to create an idempotent update record.
+      console.warn("Railway deployment webhook received without a usable GitHub commit SHA", {
+        deploymentId,
+        type: payload.type,
+        status: payload.details?.status,
+      });
       res.status(202).json({ success: true, recorded: false, reason: "missing-github-commit" });
       return;
     }
@@ -702,9 +712,6 @@ async function startServer() {
       if (changes.length === 0) {
         const fallbackTitle = cleanCommitTitle(commitMessage || String(process.env.RAILWAY_GIT_COMMIT_MESSAGE || "사이트 업데이트"));
         changes.push(`커밋 내용: ${fallbackTitle}`);
-        if (process.env.GITHUB_REPOSITORY && !process.env.GITHUB_TOKEN) {
-          changes.push("GitHub 저장소가 비공개인 경우 GITHUB_TOKEN을 추가하면 변경 파일까지 자동으로 분석합니다.");
-        }
       }
 
       const shortHash = commitHash ? commitHash.slice(0, 7) : deploymentId.slice(0, 8);
@@ -726,6 +733,46 @@ async function startServer() {
       res.status(500).json({ error: "AUTO_UPDATE_RECORD_FAILED" });
     }
   });
+
+  async function reconcileCurrentRailwayDeploymentUpdate() {
+    try {
+      const commitHash = String(process.env.RAILWAY_GIT_COMMIT_SHA || "").trim();
+      if (!/^[0-9a-f]{7,64}$/i.test(commitHash)) return;
+
+      const existing = await listSiteUpdates();
+      const updateId = `railway-commit-${commitHash.toLowerCase()}`;
+      if (existing.some((item) => item.id === updateId)) return;
+
+      const commitDetails = await fetchGitHubCommitDetails(commitHash);
+      const commitMessage = String(
+        commitDetails?.commit?.message ||
+        process.env.RAILWAY_GIT_COMMIT_MESSAGE ||
+        "사이트 업데이트",
+      ).trim() || "사이트 업데이트";
+      const bodyChanges = commitBodyChanges(commitMessage);
+      const fileChanges = humanizeChangedFiles(commitDetails?.files || []);
+      const changes = bodyChanges.length > 0 ? bodyChanges.slice(0, 10) : fileChanges.slice(0, 10);
+      if (changes.length === 0) changes.push(`커밋 내용: ${cleanCommitTitle(commitMessage)}`);
+
+      const shortHash = commitHash.slice(0, 7);
+      const update = {
+        id: updateId,
+        date: new Date().toISOString(),
+        version: nextAutomaticVersion(existing),
+        title: cleanCommitTitle(commitMessage),
+        description: `GitHub 커밋 ${shortHash}가 Railway에서 성공적으로 배포되었습니다.`,
+        changes,
+        type: inferUpdateType(commitMessage),
+      };
+      const updates = await upsertSiteUpdate(update);
+      broadcastUpdates(updates);
+      console.log(`Recorded current Railway deployment update for commit ${shortHash}.`);
+    } catch (error) {
+      // Startup reconciliation is a best-effort safety net. A failure here should
+      // never prevent the main site from starting; the Railway webhook can retry.
+      console.error("Failed to reconcile current Railway deployment update:", error);
+    }
+  }
 
   app.use("/api", requireApprovedMember);
 
@@ -1464,6 +1511,7 @@ async function startServer() {
   const port = process.env.PORT || 3000;
   server.listen(port, () => {
     console.log(`Server running on http://localhost:${port}/`);
+    void reconcileCurrentRailwayDeploymentUpdate();
   });
 }
 
