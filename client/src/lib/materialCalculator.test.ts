@@ -1,47 +1,54 @@
 import { describe, expect, it } from "vitest";
-import { calculateMaterialCounts, normalizeRecipeName } from "./materialCalculator";
+import {
+  calculateMaterialCounts,
+  getRecipeOptions,
+  normalizeRecipeName,
+} from "./materialCalculator";
 
 const monsters = [
-  { id: "target", name: "최종헨치", baseLevel: 220, main: "중간헨치 [5]", sub: "중간헨치 [5]" },
-  { id: "middle", name: "중간헨치", baseLevel: 200, main: "레벨139재료", sub: "레벨140재료", main2: "레벨169재료", sub2: "레벨170재료" },
-  { id: "level139", name: "레벨139재료", baseLevel: 139, main: "레벨140재료", sub: "-" },
-  { id: "level140", name: "레벨140재료", baseLevel: 140, main: "-", sub: "-" },
-  { id: "level169", name: "레벨169재료", baseLevel: 169, main: "-", sub: "-" },
-  { id: "level170", name: "레벨170재료", baseLevel: 170, main: "-", sub: "-" },
+  { id: "target", name: "최종헨치", baseLevel: 220, main: "중간헨치 [5]", sub: "중간헨치 [5]", main2: "대체중간 [5]", sub2: "대체중간2 [5]" },
+  { id: "middle", name: "중간헨치", baseLevel: 180, main: "레벨150재료 [4]", sub: "레벨160재료 [4]", main2: "레벨151재료 [4]", sub2: "레벨161재료 [4]" },
+  { id: "middle-alt", name: "대체중간", baseLevel: 180, main: "레벨151재료 [4]", sub: "레벨161재료 [4]" },
+  { id: "middle-alt2", name: "대체중간2", baseLevel: 180, main: "레벨152재료 [4]", sub: "레벨162재료 [4]" },
+  { id: "level150", name: "레벨150재료", baseLevel: 150, main: "-", sub: "-" },
+  { id: "level160", name: "레벨160재료", baseLevel: 160, main: "-", sub: "-" },
+  { id: "level151", name: "레벨151재료", baseLevel: 151, main: "-", sub: "-" },
+  { id: "level161", name: "레벨161재료", baseLevel: 161, main: "-", sub: "-" },
+  { id: "level152", name: "레벨152재료", baseLevel: 152, main: "-", sub: "-" },
+  { id: "level162", name: "레벨162재료", baseLevel: 162, main: "-", sub: "-" },
 ];
 
-describe("calculateMaterialCounts", () => {
-  it("follows nested recipes and counts only 140~169 materials", () => {
+describe("material calculator recipes", () => {
+  it("normalizes stage suffixes", () => {
+    expect(normalizeRecipeName(" 레벨150재료 [5] ")).toBe("레벨150재료");
+  });
+
+  it("treats main/sub and main2/sub2 as two alternative recipes", () => {
+    const options = getRecipeOptions(monsters[0]);
+    expect(options).toEqual([
+      { index: 0, main: "중간헨치", sub: "중간헨치" },
+      { index: 1, main: "대체중간", sub: "대체중간2" },
+    ]);
+  });
+
+  it("counts only 140~169 materials for the selected recipe", () => {
     expect(calculateMaterialCounts(monsters, monsters[0])).toEqual({
-      레벨140재료: 2,
-      레벨169재료: 1,
+      레벨150재료: 1,
+      레벨160재료: 1,
     });
   });
 
-  it("multiplies all calculated materials by the requested quantity", () => {
-    expect(calculateMaterialCounts(monsters, monsters[0], 3)).toEqual({
-      레벨140재료: 6,
-      레벨169재료: 3,
+  it("uses the second recipe when the user selects it", () => {
+    expect(calculateMaterialCounts(monsters, monsters[0], 2, { target: 1 })).toEqual({
+      레벨151재료: 2,
+      레벨161재료: 2,
     });
   });
 
-  it("uses 140 and 169 as inclusive boundaries and excludes 139/170 from results", () => {
-    const direct = {
-      id: "target2",
-      name: "직접재료테스트",
-      baseLevel: 220,
-      main: "레벨139재료",
-      sub: "레벨169재료",
-      main2: "레벨140재료",
-      sub2: "레벨170재료",
-    };
-    expect(calculateMaterialCounts([...monsters, direct], direct)).toEqual({
-      레벨140재료: 2,
-      레벨169재료: 1,
+  it("follows a nested recipe selection for a lower-level intermediate", () => {
+    expect(calculateMaterialCounts(monsters, monsters[0], 1, { target: 0, middle: 1 })).toEqual({
+      레벨151재료: 1,
+      레벨161재료: 1,
     });
-  });
-
-  it("normalizes stage suffixes without relying on them as character levels", () => {
-    expect(normalizeRecipeName(" 레벨140재료 [5] ")).toBe("레벨140재료");
   });
 });

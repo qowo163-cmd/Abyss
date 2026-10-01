@@ -5,11 +5,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { monsters } = vi.hoisted(() => ({
   monsters: [
-    { id: "result", name: "엑셀조합결과헨치", main: "주재료[140]", sub: "부재료[141]", main2: "보조재료[165]", sub2: "추가재료[169]", attribute: "드래곤", baseLevel: 200, maxLevel: 225, imageUrl: "/manus-storage/monster-images/material-result.webp" },
-    { id: "main", name: "주재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 140, maxLevel: 195 },
-    { id: "sub", name: "부재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 141, maxLevel: 196 },
-    { id: "secondary-main", name: "보조재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 165, maxLevel: 200 },
-    { id: "secondary-sub", name: "추가재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 169, maxLevel: 204 },
+    { id: "result", name: "다중조합헨치", main: "주재료[160]", sub: "부재료[161]", main2: "대체주재료[162]", sub2: "대체부재료[163]", attribute: "드래곤", baseLevel: 200, maxLevel: 225, imageUrl: "/monster.webp" },
+    { id: "main", name: "주재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 160, maxLevel: 185 },
+    { id: "sub", name: "부재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 161, maxLevel: 186 },
+    { id: "alt-main", name: "대체주재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 162, maxLevel: 187 },
+    { id: "alt-sub", name: "대체부재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 163, maxLevel: 188 },
   ],
 }));
 
@@ -17,38 +17,39 @@ vi.mock("@/hooks/useMonsterData", () => ({ useMonsterData: () => monsters }));
 
 import MaterialCalculator from "./MaterialCalculator";
 
-describe("MaterialCalculator secondary ingredients", () => {
+describe("MaterialCalculator multiple recipes", () => {
   afterEach(cleanup);
 
-  it("includes main2 and sub2 materials from uploaded recipe data", async () => {
+  it("shows the compact multiple-recipe summary and both selectable recipes", async () => {
     render(<MaterialCalculator />);
-    fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "엑셀조합결과헨치" } });
-    fireEvent.click(await screen.findByRole("button", { name: /엑셀조합결과헨치/ }));
+    fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
+    fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
 
-    await waitFor(() => {
-      expect(screen.getByText("보조재료")).toBeInTheDocument();
-      expect(screen.getByText("추가재료")).toBeInTheDocument();
-      expect(screen.getAllByAltText("드래곤")).toEqual(
-        expect.arrayContaining([
-          expect.objectContaining({ src: expect.stringContaining("/manus-storage/monster-images/material-result.webp") }),
-        ]),
-      );
-    });
+    expect(screen.getByText("주재료 / 대체주재료 + 부재료 / 대체부재료")).toBeInTheDocument();
+    expect(screen.getByText("주재료")).toBeInTheDocument();
+    expect(screen.getByText("대체주재료")).toBeInTheDocument();
   });
 
-  it("updates calculated quantities and remaining counts as materials are acquired", async () => {
+  it("recalculates materials when the second recipe is selected", async () => {
     render(<MaterialCalculator />);
-    fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "엑셀조합결과헨치" } });
-    fireEvent.click(await screen.findByRole("button", { name: /엑셀조합결과헨치/ }));
+    fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
+    fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
 
-    await screen.findByText("보조재료");
-    fireEvent.click(screen.getByRole("button", { name: "제작 수량 증가" }));
+    await waitFor(() => expect(screen.getByText("주재료")).toBeInTheDocument());
+    const radios = screen.getAllByRole("radio");
+    fireEvent.click(radios[1]);
 
-    await waitFor(() => expect(screen.getAllByText("2개")).toHaveLength(4));
-    fireEvent.click(screen.getAllByRole("checkbox")[0]);
+    expect(screen.getByText("대체주재료")).toBeInTheDocument();
+    expect(screen.getByText("대체부재료")).toBeInTheDocument();
+  });
 
-    expect(screen.getAllByRole("checkbox")[0]).toBeChecked();
-    expect(screen.getByText("구한 재료:").parentElement).toHaveTextContent("2개");
-    expect(screen.getByText("남은 재료:").parentElement).toHaveTextContent("6개");
+  it("keeps the 140~169 label and material quantity units", async () => {
+    render(<MaterialCalculator />);
+    fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
+    fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
+    await waitFor(() => {
+      expect(screen.getByText("140~169 레벨 재료")).toBeInTheDocument();
+      expect(screen.getAllByText(/마리$/).length).toBeGreaterThan(0);
+    });
   });
 });

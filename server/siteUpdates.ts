@@ -91,8 +91,31 @@ async function repairAutomaticUpdates() {
      WHERE id = 'railway-commit-70ccd15'`,
   );
 
-  // Never leave future automatic updates blank.  GitHub file details may be
-  // unavailable when the repository is private and no GITHUB_TOKEN is configured.
+  // Migrate the early automatic records away from the temporary v1.x numbering
+  // so the public history continues from the existing v3.100.9 sequence.
+  const [legacyAutomaticRows] = await db().query(
+    `SELECT id, version, date, created_at
+     FROM site_updates
+     WHERE id LIKE 'railway-commit-%' AND version LIKE 'v1.%'
+     ORDER BY date ASC, created_at ASC, id ASC`,
+  );
+  if ((legacyAutomaticRows as Record<string, unknown>[]).length > 0) {
+    const [currentRows] = await db().query(
+      `SELECT version FROM site_updates WHERE version REGEXP '^v3\\.100\\.[0-9]+$'`,
+    );
+    let nextPatch = 9;
+    for (const row of currentRows as Record<string, unknown>[]) {
+      const match = String(row.version || '').match(/^v3\.100\.(\d+)$/);
+      if (match) nextPatch = Math.max(nextPatch, Number(match[1]));
+    }
+    for (const row of legacyAutomaticRows as Record<string, unknown>[]) {
+      nextPatch += 1;
+      await db().query(`UPDATE site_updates SET version = ? WHERE id = ?`, [`v3.100.${nextPatch}`, String(row.id)]);
+    }
+  }
+
+  // Never leave automatic updates blank. GitHub file details may be unavailable
+  // when the repository is private and no GITHUB_TOKEN is configured.
   await db().query(
     `UPDATE site_updates
      SET changes = JSON_ARRAY('GitHub 커밋이 Railway에서 성공적으로 배포되었습니다.')

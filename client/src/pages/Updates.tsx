@@ -84,6 +84,7 @@ export default function Updates() {
         <div className="space-y-6">
           {updates.map((update, index) => {
             const changes = normalizeChanges(update.changes);
+            const displayChanges = changes.length > 0 ? changes : ['업데이트 내용이 자동으로 기록되지 않은 기존 배포입니다.'];
             return (
               <div key={update.id} className="relative">
                 {index !== updates.length - 1 && (
@@ -116,7 +117,7 @@ export default function Updates() {
                     <div className="space-y-2">
                       <p className="text-xs font-semibold text-slate-400">변경사항:</p>
                       <ul className="space-y-1">
-                        {changes.map((change, idx) => (
+                        {displayChanges.map((change, idx) => (
                           <li key={idx} className="text-xs text-slate-400 flex gap-2">
                             <span className="text-cyan-400 flex-shrink-0">•</span>
                             <span>{change}</span>
