@@ -947,3 +947,91 @@ body:not(.allow-select) img {
     pointer-events: none !important;
   }
 }
+
+/* 재료계산기 가독성 보강: 모달/조합/득코/장코/단코 글자를 배경과 강하게 분리합니다. */
+.material-calculator-page .material-detail-card {
+  background: #ffffff !important;
+  border: 2px solid #1777a5 !important;
+  color: #102f43 !important;
+  box-shadow: 0 18px 40px rgba(10, 54, 79, 0.24) !important;
+}
+
+.material-calculator-page .material-detail-card :where(p, span, div, h3, h4) {
+  color: #102f43 !important;
+  font-weight: 700;
+}
+
+.material-calculator-page .material-detail-card .material-badge-type-jang {
+  background: #b45309 !important;
+  border-color: #7c2d12 !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+.material-calculator-page .material-detail-card .material-badge-type-dan {
+  background: #1d4ed8 !important;
+  border-color: #1e3a8a !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+.material-calculator-page .material-detail-card .material-badge-acquired-yes {
+  background: #15803d !important;
+  border-color: #14532d !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+.material-calculator-page .material-detail-card .material-badge-acquired-no {
+  background: #b91c1c !important;
+  border-color: #7f1d1d !important;
+  color: #ffffff !important;
+  font-weight: 900 !important;
+}
+
+.material-calculator-page .material-detail-card .material-detail-label {
+  color: #075985 !important;
+  font-weight: 900 !important;
+}
+
+.material-calculator-page .material-detail-card .material-detail-value {
+  color: #102f43 !important;
+  font-weight: 800 !important;
+}
+
+.material-calculator-page .material-detail-card .material-recipe-box {
+  background: #f8fcff !important;
+  border: 2px solid #2785b3 !important;
+  color: #102f43 !important;
+}
+
+.material-calculator-page .material-detail-card .material-recipe-box :where(span, p) {
+  color: #102f43 !important;
+  font-weight: 800 !important;
+}
+
+.material-calculator-page .material-detail-card .material-recipe-box .recipe-index {
+  color: #6b21a8 !important;
+  font-weight: 900 !important;
+}
+
+.material-calculator-page .material-detail-card .material-recipe-box .recipe-plus {
+  color: #0369a1 !important;
+  font-weight: 900 !important;
+}
+
+.material-calculator-page .material-detail-section {
+  border: 2px solid #2785b3 !important;
+  background: #eef9ff !important;
+}
+
+.material-calculator-page .material-detail-section .material-detail-label {
+  color: #075985 !important;
+  font-weight: 900 !important;
+  letter-spacing: 0.01em;
+}
+
+.material-calculator-page .material-detail-section .material-detail-value {
+  color: #102f43 !important;
+  font-weight: 800 !important;
+}
