@@ -170,7 +170,7 @@ export default function MaterialCalculator() {
   };
 
   return (
-    <div className="material-calculator-page min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-4 md:p-8">
+    <div className="min-h-screen bg-gradient-to-b from-slate-900 to-slate-950 p-4 md:p-8">
       <div className="mx-auto max-w-6xl">
         <div className="mb-6 flex items-center gap-3">
           <Calculator className="h-8 w-8 text-cyan-400" />
@@ -396,41 +396,41 @@ export default function MaterialCalculator() {
                           </div>
 
                           {isExpanded && materialMonster && (
-                            <div className="material-detail-card rounded-xl p-4">
+                            <div className="rounded-xl border-2 border-cyan-500/40 bg-slate-950/90 p-4 shadow-lg">
                               <div className="flex flex-wrap items-center gap-2">
-                                <span className="rounded-md border-2 border-slate-700 bg-slate-700 px-2.5 py-1 text-xs font-black text-white">
+                                <span className="rounded-md border border-slate-600 bg-slate-800 px-2.5 py-1 text-xs font-bold text-white">
                                   Lv.{materialMonster.baseLevel ?? '-'}{materialMonster.maxLevel ? `~${materialMonster.maxLevel}` : ''}
                                 </span>
                                 {materialMonster.type && (
-                                  <span className={`material-badge rounded-md border-2 px-2.5 py-1 text-xs font-black ${materialMonster.type === '장코' ? 'material-badge-type-jang' : 'material-badge-type-dan'}`}>
+                                  <span className={`rounded-md border px-2.5 py-1 text-xs font-black ${materialMonster.type === '장코' ? 'border-amber-400 bg-amber-700 text-amber-50' : 'border-sky-400 bg-blue-800 text-sky-50'}`}>
                                     {materialMonster.type}
                                   </span>
                                 )}
-                                <span className={`material-badge rounded-md border-2 px-2.5 py-1 text-xs font-black ${acquiredStatus === '가능' ? 'material-badge-acquired-yes' : acquiredStatus === '불가능' ? 'material-badge-acquired-no' : 'bg-slate-700 text-white border-slate-800'}`}>
+                                <span className={`rounded-md border px-2.5 py-1 text-xs font-black ${acquiredStatus === '가능' ? 'border-green-400 bg-green-700 text-green-50' : acquiredStatus === '불가능' ? 'border-red-400 bg-red-700 text-red-50' : 'border-slate-500 bg-slate-700 text-slate-100'}`}>
                                   {acquiredStatus === '가능' ? '✓ 득코 가능' : acquiredStatus === '불가능' ? '✕ 득코 불가능' : '득코 정보 없음'}
                                 </span>
                               </div>
 
-                              <div className="material-detail-section mt-3 rounded-lg p-3">
-                                <p className="material-detail-label text-xs font-black">서식지</p>
-                                <p className="material-detail-value mt-1 break-words text-sm font-semibold leading-6">{materialMonster.habitat?.trim() || '정보 없음'}</p>
+                              <div className="mt-3 rounded-lg border border-cyan-500/30 bg-slate-900 p-3">
+                                <p className="text-xs font-black text-cyan-300">서식지</p>
+                                <p className="mt-1 break-words text-sm font-semibold leading-6 text-white">{materialMonster.habitat?.trim() || '정보 없음'}</p>
                               </div>
 
-                              <div className="material-detail-section mt-3 rounded-lg p-3">
-                                <p className="material-detail-label text-xs font-black">믹스법</p>
+                              <div className="mt-3 rounded-lg border border-violet-500/30 bg-slate-900 p-3">
+                                <p className="text-xs font-black text-violet-300">믹스법</p>
                                 {detailRecipes.length > 0 ? (
                                   <div className="mt-2 space-y-2">
                                     {detailRecipes.map((recipe, index) => (
-                                      <div key={`${materialMonster.id}-detail-${recipe.index}`} className="material-recipe-box rounded-lg px-3 py-2.5 text-sm font-semibold">
-                                        <span className="recipe-index mr-2 text-xs font-black">조합 {index + 1}</span>
+                                      <div key={`${materialMonster.id}-detail-${recipe.index}`} className="rounded-lg border border-violet-400/40 bg-violet-950/50 px-3 py-2.5 text-sm font-semibold text-white">
+                                        <span className="mr-2 text-xs font-black text-violet-300">조합 {index + 1}</span>
                                         <span>{recipe.main}</span>
-                                        <span className="recipe-plus mx-2 font-black">+</span>
+                                        <span className="mx-2 font-black text-cyan-300">+</span>
                                         <span>{recipe.sub}</span>
                                       </div>
                                     ))}
                                   </div>
                                 ) : (
-                                  <p className="material-detail-value mt-2 text-sm font-semibold">저장된 조합법이 없습니다.</p>
+                                  <p className="mt-2 text-sm font-semibold text-slate-300">저장된 조합법이 없습니다.</p>
                                 )}
                               </div>
                             </div>

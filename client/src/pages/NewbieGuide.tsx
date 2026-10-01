@@ -12,6 +12,7 @@ type GuideTopic = {
   id: string;
   category: string;
   title: string;
+  description?: string;
   image: string;
   preview?: string;
   imageCount: number;
@@ -90,9 +91,9 @@ export default function NewbieGuide() {
           </nav>
 
           {selectedTopic && <article aria-labelledby="selected-guide-title" className="min-w-0 overflow-hidden rounded-xl border border-white/15 bg-slate-950 shadow-2xl shadow-black/25">
-            <header className="flex items-center justify-between gap-3 border-b border-white/15 bg-slate-900 px-4 py-3 sm:px-5 sm:py-4"><div className="min-w-0"><span className={`inline-flex max-w-full whitespace-nowrap rounded-md border px-2 py-1 text-xs font-extrabold ${categoryStyle(selectedTopic.category, manifest.categories)}`}>{selectedTopic.category}</span><h2 id="selected-guide-title" className="mt-2 break-keep text-base font-black leading-6 text-white sm:text-2xl sm:leading-normal">{selectedTopic.title}</h2></div></header>
+            <header className="flex items-start justify-between gap-3 border-b border-slate-300 bg-white px-4 py-4 sm:px-5 sm:py-5"><div className="min-w-0"><span className={`inline-flex max-w-full whitespace-nowrap rounded-md border px-2 py-1 text-xs font-extrabold ${categoryStyle(selectedTopic.category, manifest.categories)}`}>{selectedTopic.category}</span><h2 id="selected-guide-title" className="mt-2 break-keep text-lg font-black leading-7 text-slate-950 sm:text-2xl sm:leading-8">{selectedTopic.title}</h2>{selectedTopic.description ? <p className="mt-2 break-keep text-sm font-semibold leading-6 text-slate-700 sm:text-base sm:leading-7">{selectedTopic.description}</p> : null}</div></header>
             {selectedTopic.links?.length ? <div className="flex flex-wrap gap-2 border-b border-white/15 bg-slate-950 px-4 py-3 sm:px-5">{selectedTopic.links.map((link) => <a key={link.href} href={link.href} target="_blank" rel="noreferrer" className="inline-flex min-h-10 items-center gap-2 rounded-lg border border-cyan-200/45 bg-cyan-200/10 px-3 py-2 text-sm font-extrabold text-cyan-50 transition hover:border-cyan-100 hover:bg-cyan-200/20">{link.label}<ExternalLink className="h-4 w-4" /></a>)}</div> : null}
-            <div className="bg-[#07111c] p-1 sm:p-2"><picture>{selectedTopic.preview && <source media="(max-width: 1536px)" srcSet={selectedTopic.preview} />}<img src={selectedTopic.image} alt={`${selectedTopic.title} 엑셀 원본 가이드`} loading="eager" decoding="async" className="block h-auto w-full select-none" /></picture></div>
+            <div className="bg-slate-100 p-1 sm:p-2"><picture>{selectedTopic.preview && <source media="(max-width: 1536px)" srcSet={selectedTopic.preview} />}<img src={selectedTopic.image} alt={`${selectedTopic.title} 엑셀 원본 가이드`} loading="eager" decoding="async" className="block h-auto w-full select-none" /></picture></div>
           </article>}
         </div>
       </section>}

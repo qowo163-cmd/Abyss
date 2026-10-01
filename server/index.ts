@@ -5,7 +5,7 @@ import { fileURLToPath } from "url";
 import fs from "fs";
 import { createHash } from "crypto";
 import { storagePut } from "./storage.js";
-import { listSiteUpdates, readLegacyUpdates, upsertSiteUpdate, replaceSiteUpdates } from "./siteUpdates.js";
+import { listSiteUpdates, upsertSiteUpdate, replaceSiteUpdates } from "./siteUpdates.js";
 import { loadMonsterData, mergeMonsterMetadata, saveMonsterData } from "./monsterDataStore.js";
 import { normalizeStoredMonsterImageUrls, protectMonsterImageUrls } from "./monsterImageUrls.js";
 import { PROTECTED_MONSTER_IMAGE_HEADERS, readProtectedMonsterImage } from "./protectedMonsterImage.js";
@@ -313,12 +313,11 @@ function readRailwayWebhookSecret(req: import("express").Request) {
 
 function isRailwayDeploymentSuccess(payload: RailwayDeploymentWebhookPayload) {
   const status = String(payload.details?.status ?? "").toUpperCase();
+  const type = String(payload.type ?? "").toLowerCase();
   const source = String(payload.details?.source ?? "").toLowerCase();
-  // Railway's current webhook payload uses details.status === "SUCCESS" for a
-  // successful deployment. The top-level event type is not used as a success
-  // discriminator, so accepting only "deployment.*" can reject valid payloads.
   const successStatuses = new Set(["SUCCESS", "DEPLOYED", "COMPLETED"]);
   if (!successStatuses.has(status)) return false;
+  if (type && !type.startsWith("deployment.")) return false;
   if (source && source !== "github") return false;
   const environment = payload.resource?.environment;
   if (environment?.isEphemeral === true) return false;
@@ -1278,10 +1277,7 @@ async function startServer() {
     updateSubscribers.add(res);
     listSiteUpdates()
       .then((updates) => res.write(`event: updates\ndata: ${JSON.stringify(updates)}\n\n`))
-      .catch((error) => {
-        console.error("Failed to load DB-backed updates for stream; serving legacy history:", error);
-        res.write(`event: updates\ndata: ${JSON.stringify(readLegacyUpdates())}\n\n`);
-      });
+      .catch((error) => console.error("Failed to load updates for stream:", error));
     const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 25_000);
     req.on("close", () => {
       clearInterval(heartbeat);
@@ -1291,14 +1287,11 @@ async function startServer() {
 
   app.get("/api/updates", async (_req, res) => {
     try {
-      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
+      res.setHeader("Cache-Control", "no-store");
       res.json(await listSiteUpdates());
     } catch (error) {
-      // The public history must remain visible even if the DB is temporarily
-      // unavailable or an older site_updates schema cannot be repaired.
-      console.error("Failed to load DB-backed updates; serving legacy history:", error);
-      res.setHeader("Cache-Control", "no-store, no-cache, must-revalidate, private");
-      res.json(readLegacyUpdates());
+      console.error("Failed to load updates:", error);
+      res.status(500).json({ error: "Failed to load updates" });
     }
   });
 
