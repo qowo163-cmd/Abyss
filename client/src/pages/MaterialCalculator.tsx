@@ -1,8 +1,9 @@
 import { useState, useMemo, useDeferredValue } from 'react';
 import { Input } from '@/components/ui/input';
 import { attributeImages } from '@/data/attributeImages';
-import { Calculator, Search, GitBranch, RotateCcw } from 'lucide-react';
+import { Calculator, Search, GitBranch, RotateCcw, MapPin, ChevronDown, ChevronUp } from 'lucide-react';
 import { useMonsterData } from '@/hooks/useMonsterData';
+import { splitHabitats } from '@/lib/habitats';
 import {
   calculateMaterialCounts,
   collectRecipeChoices,
@@ -21,6 +22,8 @@ interface Monster {
   main2?: string | null;
   sub2?: string | null;
   imageUrl?: string;
+  habitat?: string;
+  acquired?: string;
 }
 
 const compactName = (value: string) => value.replace(/\s+/g, '');
@@ -35,6 +38,7 @@ export default function MaterialCalculator() {
   const [quantity, setQuantity] = useState(1);
   const [checkedMaterials, setCheckedMaterials] = useState<Set<string>>(new Set());
   const [recipeSelections, setRecipeSelections] = useState<RecipeSelections>({});
+  const [expandedMaterialName, setExpandedMaterialName] = useState<string | null>(null);
 
   const searchResults = useMemo(() => {
     if (!deferredSearchQuery.trim()) return [];
@@ -100,6 +104,7 @@ export default function MaterialCalculator() {
     setSearchQuery('');
     setCheckedMaterials(new Set());
     setRecipeSelections({});
+    setExpandedMaterialName(null);
   };
 
   const handleReset = () => {
@@ -108,6 +113,12 @@ export default function MaterialCalculator() {
     setQuantity(1);
     setCheckedMaterials(new Set());
     setRecipeSelections({});
+    setExpandedMaterialName(null);
+  };
+
+  const findMaterialMonster = (name: string) => {
+    const normalized = name.replace(/\s+/g, '').trim();
+    return monsters.find((monster) => monster.name.replace(/\s+/g, '').trim() === normalized);
   };
 
   const renderRecipeChoice = (monster: Monster, nested = false) => {
@@ -133,6 +144,22 @@ export default function MaterialCalculator() {
             Lv.{monster.baseLevel ?? '-'}
           </span>
         </div>
+
+        {monster.habitat && (
+          <div className="mb-3 rounded-lg border border-amber-400/15 bg-amber-400/5 px-3 py-2.5">
+            <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+              <MapPin className="h-3.5 w-3.5 shrink-0" />
+              <span>서식지</span>
+            </div>
+            <div className="mt-1.5 flex flex-wrap gap-1.5">
+              {splitHabitats(monster.habitat).map((habitat) => (
+                <span key={habitat} className="rounded-md border border-amber-300/15 bg-amber-50/5 px-2 py-1 text-[11px] text-slate-300">
+                  {habitat}
+                </span>
+              ))}
+            </div>
+          </div>
+        )}
 
         <div className="space-y-2">
           {options.map((option, optionPosition) => (
@@ -349,28 +376,114 @@ export default function MaterialCalculator() {
 
               {sortedMaterials.length > 0 ? (
                 <>
-                  <div className="space-y-2">
-                    {sortedMaterials.map((material) => (
-                      <label
-                        key={material.name}
-                        className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-                          material.isChecked
-                            ? 'border-slate-700 bg-slate-700/40 text-slate-500'
-                            : 'border-slate-700/70 bg-slate-900/20 text-white hover:border-cyan-500/30'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={material.isChecked}
-                          onChange={() => toggleMaterialCheck(material.name)}
-                          className="h-4 w-4 cursor-pointer accent-cyan-400"
-                        />
-                        <span className={`flex-1 ${material.isChecked ? 'line-through' : ''}`}>{material.name}</span>
-                        <span className={`font-bold ${material.isChecked ? 'text-slate-500' : 'text-cyan-300'}`}>
-                          {material.count}마리
-                        </span>
-                      </label>
-                    ))}
+                  <div className="space-y-3">
+                    {sortedMaterials.map((material) => {
+                      const detailMonster = findMaterialMonster(material.name);
+                      const isExpanded = expandedMaterialName === material.name;
+                      const recipeOptions = detailMonster ? getRecipeOptions(detailMonster) : [];
+                      const acquired = detailMonster?.acquired === '0';
+
+                      return (
+                        <div key={material.name} className="space-y-2">
+                          <div
+                            className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
+                              isExpanded
+                                ? 'border-cyan-400/50 bg-cyan-500/10'
+                                : material.isChecked
+                                  ? 'border-slate-700 bg-slate-700/40 text-slate-500'
+                                  : 'border-slate-700/70 bg-slate-900/20 text-white hover:border-cyan-500/30'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={material.isChecked}
+                              onChange={() => toggleMaterialCheck(material.name)}
+                              aria-label={`${material.name} 재료 보유 여부`}
+                              className="h-4 w-4 shrink-0 cursor-pointer accent-cyan-400"
+                            />
+
+                            <button
+                              type="button"
+                              onClick={() => setExpandedMaterialName(isExpanded ? null : material.name)}
+                              className="flex min-w-0 flex-1 items-center gap-2 text-left"
+                              aria-expanded={isExpanded}
+                              aria-label={`${material.name} 상세정보 열기`}
+                            >
+                              <span className={`min-w-0 flex-1 font-medium ${material.isChecked ? 'line-through text-slate-500' : 'text-white'}`}>
+                                {material.name}
+                              </span>
+                              {isExpanded ? (
+                                <ChevronUp className="h-4 w-4 shrink-0 text-cyan-300" />
+                              ) : (
+                                <ChevronDown className="h-4 w-4 shrink-0 text-slate-500" />
+                              )}
+                            </button>
+
+                            <span className={`shrink-0 font-bold ${material.isChecked ? 'text-slate-500' : 'text-cyan-300'}`}>
+                              {material.count}마리
+                            </span>
+                          </div>
+
+                          {isExpanded && detailMonster && (
+                            <div className="rounded-xl border border-cyan-500/25 bg-slate-900/35 p-4 shadow-inner">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span
+                                  className={`inline-flex items-center rounded-lg border px-3 py-1.5 text-xs font-bold ${
+                                    acquired
+                                      ? 'border-green-600 bg-green-100 text-green-800'
+                                      : 'border-red-600 bg-red-100 text-red-800'
+                                  }`}
+                                >
+                                  {acquired ? '✓ 득코 가능' : '✕ 득코 불가능'}
+                                </span>
+                                <span className="rounded-lg border border-cyan-500/15 bg-slate-800/60 px-3 py-1.5 text-xs text-slate-300">
+                                  Lv.{detailMonster.baseLevel ?? '-'} ~ {detailMonster.maxLevel ?? '-'}
+                                </span>
+                              </div>
+
+                              {detailMonster.habitat && (
+                                <div className="mt-3 rounded-lg border border-amber-400/15 bg-amber-400/5 p-3">
+                                  <div className="flex items-center gap-1.5 text-xs font-semibold text-amber-300">
+                                    <MapPin className="h-3.5 w-3.5" />
+                                    서식지
+                                  </div>
+                                  <div className="mt-1.5 flex flex-wrap gap-1.5">
+                                    {splitHabitats(detailMonster.habitat).map((habitat) => (
+                                      <span key={habitat} className="rounded-md border border-amber-300/15 bg-amber-50/5 px-2 py-1 text-[11px] text-slate-300">
+                                        {habitat}
+                                      </span>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+
+                              <div className="mt-3 rounded-lg border border-cyan-500/15 bg-slate-800/35 p-3">
+                                <div className="mb-2 flex items-center gap-1.5 text-sm font-bold text-cyan-300">
+                                  <GitBranch className="h-4 w-4" />
+                                  믹스법
+                                </div>
+                                {recipeOptions.length > 0 ? (
+                                  <div className="space-y-2">
+                                    {recipeOptions.map((option, index) => (
+                                      <div key={`${detailMonster.id}-detail-${option.index}`} className="rounded-lg border border-slate-700/70 bg-slate-900/35 px-3 py-2.5">
+                                        <div className="mb-1.5 text-[11px] font-semibold text-slate-500">조합 {index + 1}</div>
+                                        <div className="flex flex-wrap items-center gap-2 text-sm">
+                                          <span className="rounded-md border border-purple-400/20 bg-purple-500/10 px-2.5 py-1 text-purple-200">{option.main}</span>
+                                          <span className="font-bold text-cyan-300">+</span>
+                                          <span className="rounded-md border border-blue-400/20 bg-blue-500/10 px-2.5 py-1 text-blue-200">{option.sub}</span>
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="text-xs text-slate-500">저장된 믹스법이 없습니다.</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <div className="mt-4 rounded-xl border border-slate-700 bg-slate-900/20 p-4">
