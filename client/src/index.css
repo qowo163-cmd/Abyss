@@ -226,6 +226,79 @@
   box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.56), 0 18px 38px rgba(66, 149, 191, 0.12) !important;
 }
 
+/* 상세 모달의 조합법/장코·단코/득코 표시는 밝은 배경에서도 즉시 읽히도록 대비를 강화합니다. */
+.abyss-detail-modal {
+  border-width: 2px !important;
+  border-color: rgba(25, 104, 150, 0.9) !important;
+  background: linear-gradient(145deg, rgba(245, 252, 255, 0.99), rgba(220, 242, 255, 0.99)) !important;
+  box-shadow: 0 24px 70px rgba(16, 67, 104, 0.32), inset 0 1px 0 rgba(255, 255, 255, 0.92) !important;
+  color: #12334b !important;
+}
+
+.abyss-detail-modal :where(h2, h3, h4, p, span) {
+  text-shadow: none;
+}
+
+.abyss-detail-type-jang {
+  border-color: #b45309 !important;
+  background: linear-gradient(135deg, #92400e, #b45309) !important;
+  color: #fff7ed !important;
+  box-shadow: 0 6px 14px rgba(180, 83, 9, 0.3);
+}
+
+.abyss-detail-type-dan {
+  border-color: #1d4ed8 !important;
+  background: linear-gradient(135deg, #1e3a8a, #1d4ed8) !important;
+  color: #eff6ff !important;
+  box-shadow: 0 6px 14px rgba(29, 78, 216, 0.3);
+}
+
+.abyss-detail-mix-shell {
+  border-color: rgba(24, 126, 177, 0.72) !important;
+  background: linear-gradient(145deg, rgba(222, 244, 255, 0.98), rgba(197, 230, 249, 0.96)) !important;
+  box-shadow: 0 12px 28px rgba(31, 105, 145, 0.14) !important;
+}
+
+.abyss-detail-mix-row {
+  border-color: rgba(65, 135, 170, 0.58) !important;
+  background: rgba(246, 252, 255, 0.98) !important;
+  box-shadow: 0 8px 18px rgba(38, 99, 132, 0.1) !important;
+}
+
+.abyss-detail-main-chip {
+  border: 2px solid #6d28d9 !important;
+  background: linear-gradient(135deg, #581c87, #7e22ce) !important;
+  color: #faf5ff !important;
+  box-shadow: 0 5px 12px rgba(109, 40, 217, 0.24);
+}
+
+.abyss-detail-main-chip:hover {
+  background: linear-gradient(135deg, #6b21a8, #9333ea) !important;
+}
+
+.abyss-detail-sub-chip {
+  border: 2px solid #0369a1 !important;
+  background: linear-gradient(135deg, #075985, #0284c7) !important;
+  color: #eff6ff !important;
+  box-shadow: 0 5px 12px rgba(3, 105, 161, 0.24);
+}
+
+.abyss-detail-sub-chip:hover {
+  background: linear-gradient(135deg, #0369a1, #0ea5e9) !important;
+}
+
+.abyss-detail-result-chip {
+  border: 2px solid #0e7490 !important;
+  background: linear-gradient(135deg, #0e7490, #0891b2) !important;
+  color: #ecfeff !important;
+  box-shadow: 0 5px 12px rgba(8, 145, 178, 0.24);
+}
+
+.abyss-detail-acquired-inline {
+  color: #166534 !important;
+  font-weight: 900 !important;
+}
+
 /* 밝은 헨치 카드·상세 카드에서 득코 가능 여부를 즉시 구분할 수 있도록 진한 녹색 표기를 사용합니다. */
 .abyss-acquired-label {
   display: inline-flex;
