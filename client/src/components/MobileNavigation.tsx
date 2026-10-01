@@ -20,6 +20,7 @@ const PRIMARY_ITEMS: MobileNavItem[] = [
 
 const MORE_ITEMS: MobileNavItem[] = [
   { label: "레벨계산기", path: "/calculator", icon: Calculator },
+  { label: "재료계산기", path: "/material-calculator", icon: Calculator },
   { label: "역산믹스법", path: "/reverse", icon: GitBranch },
   { label: "즐겨찾기", path: "/favorites", icon: Heart },
   { label: "건의사항", path: "/feedback", icon: MessageSquare },

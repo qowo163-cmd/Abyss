@@ -3,7 +3,7 @@ import monsters from "@/data/monsters.json";
 import { calculateMaterialCounts } from "./materialCalculator";
 
 describe("calculateMaterialCounts with current monster data", () => {
-  it("returns level 170~179 materials for 군주가루곤킹", () => {
+  it("returns level 140~169 materials for 군주가루곤킹", () => {
     const target = monsters.find((monster) => monster.name === "군주가루곤킹");
     expect(target).toBeDefined();
 

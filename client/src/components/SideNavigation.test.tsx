@@ -57,13 +57,13 @@ describe("SideNavigation logout", () => {
     expect(screen.getByTestId("sidebar-admin-dashboard-link")).toHaveAttribute("href", "/admin");
   });
 
-  it("shows 역산믹스법 after 믹스법 while keeping material calculator removed", () => {
+  it("shows the resurrected material calculator alongside the main navigation", () => {
     render(<SideNavigation currentPath="/marketplace" onLogout={vi.fn()} />);
 
     const labels = screen.getAllByRole("link").map((link) => link.textContent);
     expect(screen.getByRole("link", { name: "역산믹스법" })).toHaveAttribute("href", "/reverse");
     expect(labels.indexOf("역산믹스법")).toBe(labels.indexOf("믹스법") + 1);
     expect(labels.indexOf("거래소")).toBe(labels.indexOf("역산믹스법") + 1);
-    expect(screen.queryByRole("link", { name: "재료 계산기" })).not.toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "재료계산기" })).toHaveAttribute("href", "/material-calculator");
   });
 });

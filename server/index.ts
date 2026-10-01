@@ -394,6 +394,7 @@ async function fetchGitHubCommitDetails(commitHash: string): Promise<GitHubCommi
         Accept: "application/vnd.github+json",
         "User-Agent": "Abyss-Railway-Update-Webhook",
         "X-GitHub-Api-Version": "2022-11-28",
+        ...(process.env.GITHUB_TOKEN ? { Authorization: `Bearer ${process.env.GITHUB_TOKEN}` } : {}),
       },
       signal: controller.signal,
     });
@@ -670,7 +671,11 @@ async function startServer() {
     }
 
     const deploymentId = String(payload.details?.id || payload.resource?.deployment?.id || "").trim();
-    const commitHash = String(payload.details?.commitHash || "").trim();
+    const commitHash = String(
+      payload.details?.commitHash ||
+      process.env.RAILWAY_GIT_COMMIT_SHA ||
+      "",
+    ).trim();
     if (!deploymentId || !/^[0-9a-f]{7,64}$/i.test(commitHash)) {
       res.status(202).json({ success: true, recorded: false, reason: "missing-github-commit" });
       return;
@@ -685,11 +690,22 @@ async function startServer() {
         return;
       }
       const commitDetails = await fetchGitHubCommitDetails(commitHash);
-      const commitMessage = String(commitDetails?.commit?.message || payload.details?.commitMessage || "사이트 업데이트").trim() || "사이트 업데이트";
+      const commitMessage = String(
+        commitDetails?.commit?.message ||
+        payload.details?.commitMessage ||
+        process.env.RAILWAY_GIT_COMMIT_MESSAGE ||
+        "사이트 업데이트",
+      ).trim() || "사이트 업데이트";
       const bodyChanges = commitBodyChanges(commitMessage);
       const fileChanges = humanizeChangedFiles(commitDetails?.files || []);
       const changes = bodyChanges.length > 0 ? bodyChanges.slice(0, 10) : fileChanges.slice(0, 10);
-      if (changes.length === 0) changes.push("GitHub 커밋이 Railway 배포에 성공했습니다.");
+      if (changes.length === 0) {
+        const fallbackTitle = cleanCommitTitle(commitMessage || String(process.env.RAILWAY_GIT_COMMIT_MESSAGE || "사이트 업데이트"));
+        changes.push(`커밋 내용: ${fallbackTitle}`);
+        if (process.env.GITHUB_REPOSITORY && !process.env.GITHUB_TOKEN) {
+          changes.push("GitHub 저장소가 비공개인 경우 GITHUB_TOKEN을 추가하면 변경 파일까지 자동으로 분석합니다.");
+        }
+      }
 
       const shortHash = commitHash ? commitHash.slice(0, 7) : deploymentId.slice(0, 8);
       const update = {

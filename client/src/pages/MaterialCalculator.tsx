@@ -182,7 +182,7 @@ export default function MaterialCalculator() {
             {/* 재료 목록 */}
             <div className="bg-slate-800/50 rounded-lg p-6 border border-cyan-500/20">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-bold text-cyan-300">170~179 레벨 재료</h3>
+                <h3 className="text-lg font-bold text-cyan-300">140~169 레벨 재료</h3>
                 <button
                   onClick={handleReset}
                   className="text-sm px-3 py-1 bg-slate-700 hover:bg-slate-600 text-white rounded"
@@ -230,7 +230,7 @@ export default function MaterialCalculator() {
                   </div>
                 </>
               ) : (
-                <p className="text-slate-400 text-center py-4">170~179 레벨 재료가 없습니다</p>
+                <p className="text-slate-400 text-center py-4">140~169 레벨 재료가 없습니다</p>
               )}
             </div>
           </>

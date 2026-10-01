@@ -18,6 +18,7 @@ import { useAntiCapture } from "./hooks/useAntiCapture";
 const MainHome = React.lazy(() => import("./pages/MainHome"));
 const HenchList = React.lazy(() => import("./pages/HenchList"));
 const LevelCalculator = React.lazy(() => import("./pages/LevelCalculator"));
+const MaterialCalculator = React.lazy(() => import("./pages/MaterialCalculator"));
 const ReverseTree = React.lazy(() => import("./pages/ReverseTree"));
 const ReverseRecipe = React.lazy(() => import("./pages/ReverseRecipe"));
 const Favorites = React.lazy(() => import("./pages/Favorites"));
@@ -70,6 +71,7 @@ function Router() {
             <Route path={"/"} component={MainHome} />
             <Route path={"/hench"} component={HenchList} />
             <Route path={"/calculator"} component={LevelCalculator} />
+            <Route path={"/material-calculator"} component={MaterialCalculator} />
             <Route path={"/tree"} component={ReverseTree} />
             <Route path={"/reverse"} component={ReverseRecipe} />
             <Route path={"/marketplace"} component={Marketplace} />

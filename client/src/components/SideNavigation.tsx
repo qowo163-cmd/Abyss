@@ -38,6 +38,12 @@ const NAV_ITEMS: NavItem[] = [
     path: '/calculator',
   },
   {
+    id: 'material-calculator',
+    label: '재료계산기',
+    icon: <Calculator className="h-5 w-5" />,
+    path: '/material-calculator',
+  },
+  {
     id: 'tree',
     label: '믹스법',
     icon: <GitBranch className="h-5 w-5" />,

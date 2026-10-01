@@ -5,11 +5,11 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 
 const { monsters } = vi.hoisted(() => ({
   monsters: [
-    { id: "result", name: "엑셀조합결과헨치", main: "주재료[170]", sub: "부재료[171]", main2: "보조재료[175]", sub2: "추가재료[179]", attribute: "드래곤", baseLevel: 200, maxLevel: 225, imageUrl: "/manus-storage/monster-images/material-result.webp" },
-    { id: "main", name: "주재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 170, maxLevel: 195 },
-    { id: "sub", name: "부재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 171, maxLevel: 196 },
-    { id: "secondary-main", name: "보조재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 175, maxLevel: 200 },
-    { id: "secondary-sub", name: "추가재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 179, maxLevel: 204 },
+    { id: "result", name: "엑셀조합결과헨치", main: "주재료[140]", sub: "부재료[141]", main2: "보조재료[165]", sub2: "추가재료[169]", attribute: "드래곤", baseLevel: 200, maxLevel: 225, imageUrl: "/manus-storage/monster-images/material-result.webp" },
+    { id: "main", name: "주재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 140, maxLevel: 195 },
+    { id: "sub", name: "부재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 141, maxLevel: 196 },
+    { id: "secondary-main", name: "보조재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 165, maxLevel: 200 },
+    { id: "secondary-sub", name: "추가재료", main: "-", sub: "-", attribute: "드래곤", baseLevel: 169, maxLevel: 204 },
   ],
 }));
 
