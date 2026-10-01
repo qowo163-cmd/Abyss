@@ -45,7 +45,7 @@ function isTargetLevel(monster: MaterialRecipeMonster): boolean {
 
 /**
  * main + sub를 하나의 조합법으로, main2 + sub2를 두 번째 조합법으로 해석한다.
- * 데이터가 한쪽만 존재하는 비정상/부분 데이터도 최대한 안전하게 처리한다.
+ * 데이터가 한쪽만 존재하는 부분 데이터는 제외한다.
  */
 export function getRecipeOptions(monster: MaterialRecipeMonster): MaterialRecipeOption[] {
   const options: MaterialRecipeOption[] = [];
@@ -67,7 +67,7 @@ function selectedRecipeIndex(monster: MaterialRecipeMonster, selections?: Recipe
   const options = getRecipeOptions(monster);
   if (options.length === 0) return 0;
   const raw = Number(selections?.[monster.id]);
-  const requested = Number.isInteger(raw) ? raw : 0;
+  const requested = Number.isInteger(raw) ? raw : options[0].index;
   return options.some((option) => option.index === requested) ? requested : options[0].index;
 }
 
@@ -79,8 +79,8 @@ function recipeIngredients(monster: MaterialRecipeMonster, selections?: RecipeSe
 }
 
 /**
- * 현재 선택된 조합 경로에서, 사용자가 조합법을 골라야 하는 모든 헨치를 반환한다.
- * 140~169 레벨 재료는 더 펼치지 않는다.
+ * 현재 선택된 조합 경로에서 조합법을 골라야 하는 모든 헨치를 반환한다.
+ * 140~169 레벨 재료는 최종 재료이므로 더 펼치지 않는다.
  */
 export function collectRecipeChoices(
   monsters: MaterialRecipeMonster[],
@@ -95,9 +95,12 @@ export function collectRecipeChoices(
     if (ancestry.has(key) || visited.has(key)) return;
     visited.add(key);
 
+    // 140~169레벨은 계산의 최종 재료이므로, 조합법이 여러 개여도
+    // 그 재료의 하위 조합을 사용자에게 선택하게 하지 않는다.
+    if (isTargetLevel(monster)) return;
+
     const options = getRecipeOptions(monster);
     if (options.length > 1) choices.push(monster);
-    if (isTargetLevel(monster)) return;
 
     const nextAncestry = new Set(ancestry);
     nextAncestry.add(key);
@@ -112,13 +115,16 @@ export function collectRecipeChoices(
 }
 
 /**
- * 선택한 헨치를 만들기 위해 필요한 140~169 레벨의 최종 재료 헨치를
- * 선택한 조합 경로대로 재귀적으로 따라가며 집계한다.
+ * 선택한 헨치를 만들기 위해 필요한 140~169 레벨의 최종 재료를 재귀적으로 집계한다.
  *
- * - 140~169: 실제 준비 재료로 집계
- * - 140 미만: 다음 조합법으로 계속 펼침
- * - 170 이상: 결과에 포함하지 않음
- * - 복수 조합법: recipeSelections로 선택한 조합을 사용 (없으면 첫 번째)
+ * 핵심 규칙:
+ * - 140~169: 최종 재료로 집계하고 더 펼치지 않는다.
+ * - 140 미만: 조합법을 계속 따라간다.
+ * - 170 이상: 중간 제작 헨치일 수 있으므로 조합법을 계속 따라간다.
+ * - 여러 조합법: recipeSelections에 선택된 조합을 사용한다.
+ *
+ * 따라서 170레벨 이상인 닌자걸 같은 중간 헨치가 있어도 최종적으로
+ * 140~169레벨 재료까지 내려가서 합산한다.
  */
 export function calculateMaterialCounts(
   monsters: MaterialRecipeMonster[],
@@ -128,12 +134,14 @@ export function calculateMaterialCounts(
 ): MaterialCounts {
   const counts: MaterialCounts = {};
   const root = monsters.find((monster) => monster.id === selectedMonster.id) ?? selectedMonster;
+  const safeQuantity = Math.max(0, Number(quantity) || 0);
 
-  const add = (name: string) => {
-    counts[name] = (counts[name] || 0) + quantity;
+  const add = (name: string, amount = safeQuantity) => {
+    if (amount <= 0) return;
+    counts[name] = (counts[name] || 0) + amount;
   };
 
-  const walkIngredient = (ingredient: string, ancestry: Set<string>) => {
+  const walkIngredient = (ingredient: string, amount: number, ancestry: Set<string>) => {
     const material = findMonster(monsters, ingredient);
     if (!material) return;
 
@@ -141,19 +149,25 @@ export function calculateMaterialCounts(
     if (ancestry.has(materialKey)) return;
 
     if (isTargetLevel(material)) {
-      add(material.name);
+      add(material.name, amount);
       return;
     }
 
-    // 170 이상 결과 헨치를 재료로 직접 요구하는 경우는 표시하지 않는다.
-    if (Number(material.baseLevel) >= TARGET_LEVEL_MAX + 1) return;
+    const childIngredients = recipeIngredients(material, recipeSelections);
+    if (childIngredients.length === 0) return;
 
     const nextAncestry = new Set(ancestry);
     nextAncestry.add(materialKey);
-    recipeIngredients(material, recipeSelections).forEach((nextIngredient) => walkIngredient(nextIngredient, nextAncestry));
+
+    // 한 번의 조합에서 주재료와 부재료가 각각 1마리씩 필요하므로
+    // 현재 필요한 헨치 수량을 그대로 각 재료에 전달한다.
+    childIngredients.forEach((nextIngredient) => walkIngredient(nextIngredient, amount, nextAncestry));
   };
 
+  const rootIngredients = recipeIngredients(root, recipeSelections);
+  if (rootIngredients.length === 0) return counts;
+
   const rootKey = root.id || root.name;
-  recipeIngredients(root, recipeSelections).forEach((ingredient) => walkIngredient(ingredient, new Set([rootKey])));
+  rootIngredients.forEach((ingredient) => walkIngredient(ingredient, safeQuantity, new Set([rootKey])));
   return counts;
 }

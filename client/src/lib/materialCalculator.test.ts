@@ -38,6 +38,37 @@ describe("material calculator recipes", () => {
     });
   });
 
+
+  it("continues through 170+ level intermediate monsters until reaching 140~169 materials", () => {
+    const monsters = [
+      { id: "target", name: "최종헨치", baseLevel: 220, main: "중간170 [3]", sub: "중간180 [3]" },
+      { id: "middle170", name: "중간170", baseLevel: 170, main: "재료150 [3]", sub: "재료151 [3]" },
+      { id: "middle180", name: "중간180", baseLevel: 180, main: "재료152 [3]", sub: "재료153 [3]" },
+      { id: "m150", name: "재료150", baseLevel: 150, main: "-", sub: "-" },
+      { id: "m151", name: "재료151", baseLevel: 151, main: "-", sub: "-" },
+      { id: "m152", name: "재료152", baseLevel: 152, main: "-", sub: "-" },
+      { id: "m153", name: "재료153", baseLevel: 153, main: "-", sub: "-" },
+    ];
+
+    expect(calculateMaterialCounts(monsters, monsters[0])).toEqual({
+      재료150: 1,
+      재료151: 1,
+      재료152: 1,
+      재료153: 1,
+    });
+  });
+
+
+  it("does not ask for a recipe choice for 140~169 final materials", () => {
+    const monsters = [
+      { id: "target", name: "최종헨치", baseLevel: 220, main: "재료150 [3]", sub: "재료151 [3]" },
+      { id: "m150", name: "재료150", baseLevel: 150, main: "하위1 [2]", sub: "하위2 [2]", main2: "하위3 [2]", sub2: "하위4 [2]" },
+      { id: "m151", name: "재료151", baseLevel: 151, main: "-", sub: "-" },
+    ];
+
+    expect(collectRecipeChoices(monsters, monsters[0])).toEqual([]);
+  });
+
   it("uses the second recipe when the user selects it", () => {
     expect(calculateMaterialCounts(monsters, monsters[0], 2, { target: 1 })).toEqual({
       레벨151재료: 2,
