@@ -11,7 +11,7 @@ import {
   type UpdateItem,
 } from '@/lib/updates';
 
-const defaultUpdates = normalizeUpdates(historyUpdates);
+const defaultUpdates = normalizeUpdates(historyUpdates).filter((update, index, list) => list.findIndex((candidate) => candidate.id === update.id) === index);
 
 const getTypeIcon = (type: string) => {
   switch (type) {
@@ -44,17 +44,21 @@ export default function Updates() {
 
   useEffect(() => {
     const applyServerUpdates = (serverUpdates: UpdateItem[]) => {
-      const merged = mergeUpdates(serverUpdates, defaultUpdates);
-      setUpdates(merged);
-      localStorage.setItem('updates', JSON.stringify(merged));
+      const merged = mergeUpdates(serverUpdates, readLocalUpdates(), defaultUpdates);
+      // Never replace a usable local/static history with an empty server payload.
+      const safeUpdates = merged.length > 0 ? merged : defaultUpdates;
+      setUpdates(safeUpdates);
+      localStorage.setItem('updates', JSON.stringify(safeUpdates));
     };
 
     const refreshUpdates = async () => {
       try {
-        applyServerUpdates(await fetchServerUpdates());
+        const serverUpdates = await fetchServerUpdates();
+        applyServerUpdates(serverUpdates);
       } catch (error) {
         console.error('Failed to fetch updates from server:', error);
-        setUpdates(mergeUpdates(readLocalUpdates(), defaultUpdates));
+        const fallback = mergeUpdates(readLocalUpdates(), defaultUpdates);
+        setUpdates(fallback.length > 0 ? fallback : defaultUpdates);
       }
     };
 
@@ -72,7 +76,7 @@ export default function Updates() {
   }, []);
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
+    <div className="updates-page min-h-screen bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <header className="border-b border-cyan-500/20 bg-gradient-to-b from-slate-900 to-slate-900/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="px-4 sm:px-6 py-3 sm:py-4">
           <h1 className="text-lg sm:text-2xl font-bold text-cyan-300">업데이트 내역</h1>
@@ -82,6 +86,12 @@ export default function Updates() {
 
       <div className="p-4 sm:p-6 max-w-3xl mx-auto">
         <div className="space-y-6">
+          {updates.length === 0 && (
+            <div className="updates-empty rounded-xl border-2 border-cyan-500/50 bg-white p-8 text-center">
+              <p className="text-lg font-black">아직 업데이트 내역이 없습니다.</p>
+              <p className="mt-2 text-sm">사이트 기록을 불러오지 못했습니다. 잠시 후 다시 확인해 주세요.</p>
+            </div>
+          )}
           {updates.map((update, index) => {
             const changes = normalizeChanges(update.changes);
             const displayChanges = changes.length > 0 ? changes : ['업데이트 내용이 자동으로 기록되지 않은 기존 배포입니다.'];
@@ -98,7 +108,7 @@ export default function Updates() {
                     </div>
                   </div>
 
-                  <div className="flex-1 bg-slate-800/50 border border-slate-700 rounded-lg p-4 hover:border-cyan-500/50 transition-colors">
+                  <div className="updates-card flex-1 rounded-lg p-4 transition-colors hover:border-cyan-500/70">
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div>
                         <div className="flex items-center gap-2 mb-1">

@@ -1035,3 +1035,132 @@ body:not(.allow-select) img {
   color: #102f43 !important;
   font-weight: 800 !important;
 }
+
+/* ===== 전체 모달/재료계산기/업데이트 화면 고대비 보강 ===== */
+.abyss-detail-modal {
+  font-size: 0.96rem;
+}
+
+.abyss-detail-modal :where(.text-white, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500, .text-slate-600) {
+  color: #17384f !important;
+}
+
+.abyss-detail-modal :where(.text-cyan-100, .text-cyan-200, .text-cyan-300, .text-cyan-400) {
+  color: #075985 !important;
+}
+
+.abyss-detail-modal :where(.text-green-200, .text-green-300, .text-green-400) {
+  color: #166534 !important;
+}
+
+.abyss-detail-modal :where(.text-red-200, .text-red-300, .text-red-400) {
+  color: #991b1b !important;
+}
+
+.abyss-detail-modal :where(.text-amber-200, .text-amber-300, .text-amber-400) {
+  color: #92400e !important;
+}
+
+.abyss-detail-modal :where(.text-violet-200, .text-violet-300, .text-violet-400) {
+  color: #5b21b6 !important;
+}
+
+.abyss-detail-modal :where(.abyss-detail-type-jang, .abyss-detail-type-dan, .abyss-detail-main-chip, .abyss-detail-sub-chip, .abyss-detail-result-chip) {
+  color: #ffffff !important;
+}
+
+.abyss-detail-modal button {
+  font-weight: 800;
+}
+
+.material-calculator-page {
+  color: #17384f !important;
+}
+
+.material-calculator-page :where(.text-white, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500, .text-slate-600) {
+  color: #193d55 !important;
+}
+
+.material-calculator-page :where(.text-cyan-100, .text-cyan-200, .text-cyan-300, .text-cyan-400) {
+  color: #075985 !important;
+}
+
+.material-calculator-page :where(.text-orange-200, .text-orange-300, .text-orange-400) {
+  color: #9a3412 !important;
+}
+
+.material-calculator-page :where(.border-slate-700, .border-slate-700\/50, .border-slate-700\/70) {
+  border-color: #78b9d8 !important;
+}
+
+.material-calculator-page :where(.bg-slate-900, .bg-slate-900\/20, .bg-slate-800\/30, .bg-slate-800\/40, .bg-slate-800\/50, .bg-slate-700) {
+  background-color: #f5fbff !important;
+}
+
+.material-calculator-page input {
+  color: #163c55 !important;
+  background-color: #ffffff !important;
+  border-color: #69b2d3 !important;
+}
+
+.material-calculator-page input::placeholder {
+  color: #567386 !important;
+  opacity: 1 !important;
+}
+
+.material-calculator-page button {
+  color: #17384f;
+  font-weight: 800;
+}
+
+.material-calculator-page .material-badge,
+.material-calculator-page .material-badge-type-jang,
+.material-calculator-page .material-badge-type-dan,
+.material-calculator-page .material-badge-acquired-yes,
+.material-calculator-page .material-badge-acquired-no {
+  color: #ffffff !important;
+}
+
+.material-calculator-page .material-recipe-box {
+  color: #17384f !important;
+}
+
+.material-calculator-page .material-recipe-box :where(span, p) {
+  color: #17384f !important;
+}
+
+.material-calculator-page .material-recipe-box .recipe-index {
+  color: #5b21b6 !important;
+}
+
+.material-calculator-page .material-recipe-box .recipe-plus {
+  color: #075985 !important;
+}
+
+/* 업데이트 화면: 데이터베이스가 잠시 비어도 기본 이력의 글자가 항상 보이도록 고대비로 고정 */
+.updates-page {
+  color: #17384f !important;
+  background: linear-gradient(180deg, #eaf8ff 0%, #d9f0fb 100%) !important;
+}
+
+.updates-page :where(.text-white, .text-slate-100, .text-slate-200, .text-slate-300, .text-slate-400, .text-slate-500, .text-slate-600) {
+  color: #214760 !important;
+}
+
+.updates-page :where(.text-cyan-100, .text-cyan-200, .text-cyan-300, .text-cyan-400) {
+  color: #006b9c !important;
+}
+
+.updates-page :where(.text-green-400, .text-red-400, .text-yellow-400) {
+  color: #14532d !important;
+}
+
+.updates-page .updates-card {
+  background: #ffffff !important;
+  border: 2px solid #7ec5e5 !important;
+  box-shadow: 0 14px 30px rgba(41, 112, 147, 0.16) !important;
+}
+
+.updates-page .updates-empty {
+  color: #17384f !important;
+}

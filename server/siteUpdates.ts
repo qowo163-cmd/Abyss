@@ -13,7 +13,7 @@ const LEGACY_UPDATES_PATH = path.resolve(__dirname, "..", "client", "src", "data
 let historyEnsured = false;
 let automaticUpdatesRepaired = false;
 
-function readLegacyUpdates(): SiteUpdateItem[] {
+export function readLegacyUpdates(): SiteUpdateItem[] {
   try {
     if (!fs.existsSync(LEGACY_UPDATES_PATH)) return [];
     const parsed = JSON.parse(fs.readFileSync(LEGACY_UPDATES_PATH, "utf8"));
@@ -46,27 +46,25 @@ async function seedLegacyHistoryIfNeeded() {
     historyEnsured = true;
     return;
   }
-  const [rows] = await db().query("SELECT COUNT(*) AS count FROM site_updates WHERE id LIKE 'history-%'");
-  const count = Number((rows as Record<string, unknown>[])[0]?.count || 0);
-  if (count === 0) {
-    const conn = await db().getConnection();
-    try {
-      await conn.beginTransaction();
-      for (const update of legacy) {
-        await conn.query(
-          `INSERT INTO site_updates (id, date, version, title, description, changes, type)
-           VALUES (?, ?, ?, ?, ?, ?, ?)
-           ON DUPLICATE KEY UPDATE id=id`,
-          [update.id, update.date, update.version, update.title, update.description, JSON.stringify(update.changes), update.type],
-        );
-      }
-      await conn.commit();
-    } catch (error) {
-      await conn.rollback();
-      throw error;
-    } finally {
-      conn.release();
+  // Reconcile every legacy row as an insert-if-missing. This restores the public
+  // history even when a previous admin save removed some rows from the DB.
+  const conn = await db().getConnection();
+  try {
+    await conn.beginTransaction();
+    for (const update of legacy) {
+      await conn.query(
+        `INSERT INTO site_updates (id, date, version, title, description, changes, type)
+         VALUES (?, ?, ?, ?, ?, ?, ?)
+         ON DUPLICATE KEY UPDATE id=id`,
+        [update.id, update.date, update.version, update.title, update.description, JSON.stringify(update.changes), update.type],
+      );
     }
+    await conn.commit();
+  } catch (error) {
+    await conn.rollback();
+    throw error;
+  } finally {
+    conn.release();
   }
   historyEnsured = true;
 }
@@ -74,54 +72,67 @@ async function seedLegacyHistoryIfNeeded() {
 async function repairAutomaticUpdates() {
   if (automaticUpdatesRepaired) return;
 
-  // The first version of the automatic webhook recorder could create v1.0.0
-  // with an empty changes list when GitHub commit details were unavailable.
-  // Repair that legacy row so the existing v3.100.x history remains continuous.
-  await db().query(
-    `UPDATE site_updates
-     SET version = 'v3.100.10',
-         title = '장코/단코 표시 및 Railway 자동 업데이트 기록',
-         description = '헨치 목록의 장코·단코 표시를 보완하고, Railway 배포 성공 시 업데이트 내역을 자동으로 기록하도록 연결했습니다.',
-         changes = JSON_ARRAY(
-           '헨치목록·믹스법·역산믹스법의 장코/단코 표시 보완',
-           'Railway 배포가 성공한 경우에만 업데이트 내역 자동 등록',
-           'GitHub 커밋 정보를 이용한 업데이트 제목·변경사항 자동 생성',
-           '업데이트 탭의 실시간 SSE 반영 연결'
-         )
-     WHERE id = 'railway-commit-70ccd15'`,
-  );
-
-  // Migrate the early automatic records away from the temporary v1.x numbering
-  // so the public history continues from the existing v3.100.9 sequence.
-  const [legacyAutomaticRows] = await db().query(
-    `SELECT id, version, date, created_at
-     FROM site_updates
-     WHERE id LIKE 'railway-commit-%' AND version LIKE 'v1.%'
-     ORDER BY date ASC, created_at ASC, id ASC`,
-  );
-  if ((legacyAutomaticRows as Record<string, unknown>[]).length > 0) {
-    const [currentRows] = await db().query(
-      `SELECT version FROM site_updates WHERE version REGEXP '^v3\\.100\\.[0-9]+$'`,
-    );
-    let nextPatch = 9;
-    for (const row of currentRows as Record<string, unknown>[]) {
-      const match = String(row.version || '').match(/^v3\.100\.(\d+)$/);
-      if (match) nextPatch = Math.max(nextPatch, Number(match[1]));
+  // Keep legacy automatic records readable even when the DB driver returns JSON
+  // columns as native values. Avoid MySQL JSON_* functions so older schemas also work.
+  try {
+    const [rows] = await db().query(`SELECT id, version, date, title, description, changes, type FROM site_updates WHERE id LIKE 'railway-commit-%'`);
+    const automaticRows = rows as Record<string, unknown>[];
+    for (const row of automaticRows) {
+      const id = String(row.id || "");
+      const currentVersion = String(row.version || "");
+      let changes: string[] = [];
+      const raw = row.changes;
+      if (Array.isArray(raw)) changes = raw.map(String).filter(Boolean);
+      else if (typeof raw === "string") {
+        try {
+          const parsed = JSON.parse(raw);
+          if (Array.isArray(parsed)) changes = parsed.map(String).filter(Boolean);
+        } catch { /* keep fallback below */ }
+      }
+      if (id === 'railway-commit-70ccd15') {
+        changes = [
+          '헨치목록·믹스법·역산믹스법의 장코/단코 표시 보완',
+          'Railway 배포가 성공한 경우에만 업데이트 내역 자동 등록',
+          'GitHub 커밋 정보를 이용한 업데이트 제목·변경사항 자동 생성',
+          '업데이트 탭의 실시간 SSE 반영 연결',
+        ];
+        await db().query(
+          `UPDATE site_updates SET version=?, title=?, description=?, changes=?, type=? WHERE id=?`,
+          [
+            'v3.100.10',
+            '장코/단코 표시 및 Railway 자동 업데이트 기록',
+            '헨치 목록의 장코·단코 표시를 보완하고, Railway 배포 성공 시 업데이트 내역을 자동으로 기록하도록 연결했습니다.',
+            JSON.stringify(changes),
+            'improvement',
+            id,
+          ],
+        );
+        continue;
+      }
+      if (changes.length === 0) {
+        const fallback = String(row.title || '사이트 업데이트').trim() || '사이트 업데이트';
+        await db().query(
+          `UPDATE site_updates SET changes=? WHERE id=?`,
+          [JSON.stringify([`커밋 내용: ${fallback}`]), id],
+        );
+      }
+      // Keep the public automatic history on the existing v3.100.x sequence.
+      if (/^v1\./.test(currentVersion)) {
+        // The next patch number is calculated from all current v3.100.x rows.
+        const [currentRows] = await db().query(`SELECT version FROM site_updates WHERE version LIKE 'v3.100.%'`);
+        let nextPatch = 9;
+        for (const candidate of currentRows as Record<string, unknown>[]) {
+          const match = String(candidate.version || '').match(/^v3\.100\.(\d+)$/);
+          if (match) nextPatch = Math.max(nextPatch, Number(match[1]));
+        }
+        nextPatch += 1;
+        await db().query(`UPDATE site_updates SET version=? WHERE id=?`, [`v3.100.${nextPatch}`, id]);
+      }
     }
-    for (const row of legacyAutomaticRows as Record<string, unknown>[]) {
-      nextPatch += 1;
-      await db().query(`UPDATE site_updates SET version = ? WHERE id = ?`, [`v3.100.${nextPatch}`, String(row.id)]);
-    }
+  } catch (error) {
+    // Update history should never prevent the main site from starting.
+    console.error('Failed to repair automatic update history:', error);
   }
-
-  // Never leave automatic updates blank. GitHub file details may be unavailable
-  // when the repository is private and no GITHUB_TOKEN is configured.
-  await db().query(
-    `UPDATE site_updates
-     SET changes = JSON_ARRAY('GitHub 커밋이 Railway에서 성공적으로 배포되었습니다.')
-     WHERE id LIKE 'railway-commit-%'
-       AND (changes IS NULL OR JSON_LENGTH(changes) = 0)`,
-  );
   automaticUpdatesRepaired = true;
 }
 
@@ -144,11 +155,21 @@ export interface SiteUpdateItem {
 
 function rowToUpdate(row: Record<string, unknown>): SiteUpdateItem {
   let changes: string[] = [];
-  try {
-    const parsed = JSON.parse(String(row.changes ?? "[]"));
-    if (Array.isArray(parsed)) changes = parsed.map(String);
-  } catch {
-    // 저장된 형식이 깨졌으면 빈 목록으로 처리합니다.
+  const rawChanges = row.changes;
+  if (Array.isArray(rawChanges)) {
+    changes = rawChanges.map(String).filter(Boolean);
+  } else if (rawChanges && typeof rawChanges === "object") {
+    // mysql2 can return JSON columns as native arrays/objects depending on configuration.
+    changes = Object.values(rawChanges as Record<string, unknown>).map(String).filter(Boolean);
+  } else if (typeof rawChanges === "string") {
+    try {
+      const parsed = JSON.parse(rawChanges);
+      if (Array.isArray(parsed)) changes = parsed.map(String).filter(Boolean);
+      else if (parsed && typeof parsed === "object") changes = Object.values(parsed as Record<string, unknown>).map(String).filter(Boolean);
+      else if (parsed != null) changes = [String(parsed)];
+    } catch {
+      changes = rawChanges.split(/\r?\n/).map((value) => value.trim()).filter(Boolean);
+    }
   }
   const type = row.type === "fix" || row.type === "improvement" ? row.type : "feature";
   return {
