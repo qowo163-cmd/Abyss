@@ -188,11 +188,34 @@ export default function Admin() {
   }, [activeTab, currentMember?.role]);
 
   const normalizedSearchQuery = deferredSearchQuery.trim().toLowerCase();
-  const filteredMonsters = useMemo(() => monsters.filter((monster) =>
-    !normalizedSearchQuery
-    || monster.name.toLowerCase().includes(normalizedSearchQuery)
-    || (monster.habitat || '').toLowerCase().includes(normalizedSearchQuery)
-  ), [monsters, normalizedSearchQuery]);
+  // 쉼표로 여러 이름을 입력하면 각 헨치를 동시에 찾고, 단일 검색은 기존처럼 이름/서식지 부분 검색을 유지합니다.
+  const multiSearchTerms = useMemo(
+    () => normalizedSearchQuery.split(/[,，]/).map((term) => term.trim()).filter(Boolean),
+    [normalizedSearchQuery],
+  );
+  const normalizedMultiSearchTerms = useMemo(
+    () => multiSearchTerms.map((term) => term.replace(/\s+/g, '')),
+    [multiSearchTerms],
+  );
+  const isCommaSearch = /[,，]/.test(normalizedSearchQuery);
+  const filteredMonsters = useMemo(() => {
+    if (!normalizedSearchQuery) return monsters;
+
+    if (isCommaSearch) {
+      const requestedNames = new Set(normalizedMultiSearchTerms);
+      return monsters.filter((monster) => requestedNames.has(monster.name.trim().toLowerCase().replace(/\s+/g, '')));
+    }
+
+    return monsters.filter((monster) =>
+      monster.name.toLowerCase().includes(normalizedSearchQuery)
+      || (monster.habitat || '').toLowerCase().includes(normalizedSearchQuery)
+    );
+  }, [monsters, normalizedSearchQuery, isCommaSearch, multiSearchTerms, normalizedMultiSearchTerms]);
+  const unmatchedMultiSearchTerms = useMemo(() => {
+    if (!isCommaSearch) return [];
+    const matchedNames = new Set(filteredMonsters.map((monster) => monster.name.trim().toLowerCase().replace(/\s+/g, '')));
+    return multiSearchTerms.filter((term) => !matchedNames.has(term.replace(/\s+/g, '')));
+  }, [isCommaSearch, multiSearchTerms, filteredMonsters]);
   const recipeMonsters = useMemo(
     () => monsters.filter((monster) => monster.main !== '-' || monster.sub !== '-'),
     [monsters],
@@ -1090,7 +1113,7 @@ export default function Admin() {
           <TabsContent value="monsters" className="space-y-4">
             <div className="flex flex-col sm:flex-row gap-2 sm:gap-4">
               <Input
-                placeholder="몬스터 이름 또는 서식지 검색..."
+                placeholder="몬스터 이름 또는 서식지 검색... (여러 헨치는 쉼표로 구분)"
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 className="flex-1 bg-slate-800/50 border-slate-700"
@@ -1109,6 +1132,17 @@ export default function Admin() {
                 저장
               </Button>
             </div>
+            {normalizedSearchQuery && (
+              <div className="space-y-1 text-sm" aria-live="polite">
+                <p className="text-slate-300">
+                  검색 결과 <span className="font-bold text-cyan-300">{filteredMonsters.length}마리</span>
+                  {isCommaSearch ? ` · ${multiSearchTerms.length}개 이름으로 동시 검색` : ''}
+                </p>
+                {unmatchedMultiSearchTerms.length > 0 && (
+                  <p className="text-amber-300">찾지 못한 이름: {unmatchedMultiSearchTerms.join(', ')}</p>
+                )}
+              </div>
+            )}
 
             <section className="space-y-3 rounded-lg border border-cyan-500/30 bg-slate-800/50 p-4">
               <div className="flex flex-col gap-1 sm:flex-row sm:items-center sm:justify-between">
