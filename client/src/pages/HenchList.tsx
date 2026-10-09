@@ -8,6 +8,7 @@ import { Search, Heart } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { attributeImages } from '@/data/attributeImages';
 import { useMonsterData } from '@/hooks/useMonsterData';
+import { monsterTypeBadgeClass, resolveMonsterType } from '@/lib/monsterType';
 import { hasHabitat, splitHabitats } from '@/lib/habitats';
 
 const ATTRIBUTES: AttributeType[] = ['악마', '짐승', '새', '드래곤', '식물', '메탈', '곤충', '미스터리'];
@@ -341,7 +342,7 @@ export default function HenchList() {
                         <p className="font-semibold text-slate-200 text-xs sm:text-sm truncate">{monster.name}</p>
                         <div className="flex items-center gap-1.5">
                           <p className="text-xs text-cyan-400 font-bold">{monster.attribute}</p>
-                          {monster.type && <span className={`rounded px-1 py-px text-[10px] font-bold ${monster.type === '장코' ? 'bg-amber-500/20 text-amber-300' : 'bg-sky-500/20 text-sky-300'}`}>{monster.type}</span>}
+                          {resolveMonsterType(monster) && <span className={monsterTypeBadgeClass(resolveMonsterType(monster)!, 'xs')}>{resolveMonsterType(monster)}</span>}
                         </div>
                       </div>
 

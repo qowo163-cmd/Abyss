@@ -2,6 +2,7 @@ import { Monster } from '@/types/monster';
 import { attributeColors, attributeImages } from '@/data/attributeImages';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { resolveMonsterType } from '@/lib/monsterType';
 import { Heart, MapPin, Zap } from 'lucide-react';
 
 interface MonsterDetailModalProps {
@@ -17,6 +18,7 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
 
   const colors = attributeColors[monster.attribute] || attributeColors['악마'];
   const image = monster.imageUrl || attributeImages[monster.attribute] || attributeImages['악마'];
+  const monsterType = resolveMonsterType(monster);
 
   const handleMonsterClick = (monsterName: string) => {
     // [숫자] 제거 및 공백 정규화
@@ -89,11 +91,7 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
                   {monster.attribute}
                 </div>
                 {/* 장코/단코 배지 */}
-                {monster.type && (
-                  <div className={cn('absolute left-3 top-3 rounded-full border px-3 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-black shadow-lg', monster.type === '장코' ? 'abyss-detail-type-jang' : 'abyss-detail-type-dan')}>
-                    {monster.type}
-                  </div>
-                )}
+                {monsterType && <div className={cn('absolute left-3 top-3 rounded-full border-2 px-3 py-1.5 text-xs font-black shadow-lg sm:px-4 sm:py-2 sm:text-sm', monsterType === '장코' ? 'border-amber-200 bg-amber-100 text-amber-950' : 'border-sky-200 bg-sky-100 text-sky-950')}>{monsterType}</div>}
               </div>
             </div>
 

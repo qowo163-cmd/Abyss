@@ -64,4 +64,21 @@ describe('MainHome', () => {
     render(<MobileMainHome />);
     expect(screen.getByRole('heading', { name: '무엇을 도와드릴까요?' })).toBeInTheDocument();
   });
+  it('shows updates recorded by the server instead of relying only on the bundled JSON', async () => {
+    vi.stubGlobal('fetch', vi.fn(async (input: RequestInfo | URL) => {
+      const url = String(input);
+      if (url === '/api/updates') {
+        return new Response(JSON.stringify([{
+          id: 'railway-commit-new-test', date: '2026-10-10T00:00:00.000Z', version: 'v3.100.10',
+          title: '자동 배포 업데이트 테스트', description: 'GitHub 변경 내용이 배포 기록으로 반영되었습니다.',
+          changes: ['홈 화면에서 서버 업데이트 이력을 표시'], type: 'improvement',
+        }]), { status: 200, headers: { 'Content-Type': 'application/json' } });
+      }
+      return new Response(null, { status: 304 });
+    }));
+    render(<MainHome />);
+    expect(await screen.findByText('자동 배포 업데이트 테스트')).toBeInTheDocument();
+    expect(screen.getByText('v3.100.10')).toBeInTheDocument();
+  });
+
 });

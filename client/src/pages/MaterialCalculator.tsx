@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { attributeImages } from '@/data/attributeImages';
 import { Calculator, Search, GitBranch, RotateCcw } from 'lucide-react';
 import { useMonsterData } from '@/hooks/useMonsterData';
+import { monsterTypeBadgeClass, resolveMonsterType } from '@/lib/monsterType';
 import {
   calculateMaterialCounts,
   collectRecipeChoices,
@@ -401,11 +402,7 @@ export default function MaterialCalculator() {
                                 <span className="rounded-md border border-slate-600 bg-slate-800 px-2.5 py-1 text-xs font-bold text-white">
                                   Lv.{materialMonster.baseLevel ?? '-'}{materialMonster.maxLevel ? `~${materialMonster.maxLevel}` : ''}
                                 </span>
-                                {materialMonster.type && (
-                                  <span className={`rounded-md border px-2.5 py-1 text-xs font-black ${materialMonster.type === '장코' ? 'border-amber-400 bg-amber-700 text-amber-50' : 'border-sky-400 bg-blue-800 text-sky-50'}`}>
-                                    {materialMonster.type}
-                                  </span>
-                                )}
+                                {resolveMonsterType(materialMonster) && <span className={monsterTypeBadgeClass(resolveMonsterType(materialMonster)!, 'sm')}>{resolveMonsterType(materialMonster)}</span>}
                                 <span className={`rounded-md border px-2.5 py-1 text-xs font-black ${acquiredStatus === '가능' ? 'border-green-400 bg-green-700 text-green-50' : acquiredStatus === '불가능' ? 'border-red-400 bg-red-700 text-red-50' : 'border-slate-500 bg-slate-700 text-slate-100'}`}>
                                   {acquiredStatus === '가능' ? '✓ 득코 가능' : acquiredStatus === '불가능' ? '✕ 득코 불가능' : '득코 정보 없음'}
                                 </span>

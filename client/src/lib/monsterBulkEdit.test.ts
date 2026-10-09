@@ -10,20 +10,8 @@ const monsters: Monster[] = [
 describe('monster bulk editing', () => {
   it('updates acquired status and habitat only for the selected monsters', () => {
     const updated = applyMonsterBulkEdit(monsters, ['one'], { acquired: 'x', habitat: '바로크 145lv~' });
-    expect(updated[0]).toMatchObject({ acquired: 'x', habitat: '메탈의 구역 4층, 바로크 145lv~' });
+    expect(updated[0]).toMatchObject({ acquired: 'x', habitat: '바로크 145lv~' });
     expect(updated[1]).toBe(monsters[1]);
-  });
-
-  it('clears habitat only when the explicit clear option is used', () => {
-    const updated = applyMonsterBulkEdit(monsters, ['one'], { clearHabitat: true });
-    expect(updated[0].habitat).toBe('');
-    expect(updated[1].habitat).toBe('악마의 구역 6층');
-  });
-
-  it('appends new habitats for each selected monster while preserving its own existing location', () => {
-    const updated = applyMonsterBulkEdit(monsters, ['one', 'two'], { habitat: '바로크 145lv~' });
-    expect(updated[0].habitat).toBe('메탈의 구역 4층, 바로크 145lv~');
-    expect(updated[1].habitat).toBe('악마의 구역 6층, 바로크 145lv~');
   });
 
   it('finds only matching-name rows whose acquired value differs before import', () => {

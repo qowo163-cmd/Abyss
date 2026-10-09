@@ -1,12 +1,10 @@
 import type { Monster } from '@/types/monster';
-import { mergeHabitats } from './habitats';
 
 export type AcquiredValue = '0' | 'x';
 
 export type MonsterBulkEdit = {
   acquired?: AcquiredValue;
   habitat?: string;
-  clearHabitat?: boolean;
 };
 
 export type AcquiredMismatch = {
@@ -28,7 +26,7 @@ export function applyMonsterBulkEdit(monsters: Monster[], monsterIds: Iterable<s
     return {
       ...monster,
       ...(edit.acquired ? { acquired: edit.acquired } : {}),
-      ...(edit.clearHabitat ? { habitat: '' } : habitat ? { habitat: mergeHabitats(monster.habitat, habitat) } : {}),
+      ...(habitat ? { habitat } : {}),
     };
   });
 }

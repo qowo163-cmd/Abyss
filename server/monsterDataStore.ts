@@ -32,7 +32,7 @@ function readJsonFile(filePath: string): MonsterRecord[] {
   try {
     if (!fs.existsSync(filePath)) return [];
     const value = JSON.parse(fs.readFileSync(filePath, "utf-8"));
-  return Array.isArray(value) ? applyMonsterDataCorrections(value as MonsterRecord[]) : [];
+    return Array.isArray(value) ? applyMonsterDataCorrections(value as MonsterRecord[]) : [];
   } catch (error) {
     console.error("Failed to read monster fallback file:", error);
     return [];
@@ -44,7 +44,7 @@ async function readDatabase(): Promise<MonsterRecord[] | null> {
   const raw = (rows as Array<{ data?: unknown }>)[0]?.data;
   if (typeof raw !== "string") return null;
   const value = JSON.parse(raw);
-  return Array.isArray(value) ? applyMonsterDataCorrections(value as MonsterRecord[]) : null;
+  return Array.isArray(value) ? value as MonsterRecord[] : null;
 }
 
 async function writeDatabase(monsters: MonsterRecord[]) {
@@ -89,8 +89,12 @@ function fillMissingMonsterTypes(stored: MonsterRecord[], fallback: MonsterRecor
   let changed = false;
 
   const merged = stored.map((monster) => {
-    const currentType = String(monster.type || "").trim();
-    if (currentType === "장코" || currentType === "단코") return monster;
+    const currentType = String(monster.type ?? "").trim();
+    if (currentType === "장코" || currentType === "단코") {
+      if (monster.type === currentType) return monster;
+      changed = true;
+      return { ...monster, type: currentType };
+    }
 
     const fallbackMonster = fallbackById.get(String(monster.id || ""))
       || fallbackByName.get(normalizeMonsterName(monster.name));
@@ -107,13 +111,14 @@ function fillMissingMonsterTypes(stored: MonsterRecord[], fallback: MonsterRecor
 async function loadMonsterDataUncached(fallbackPath: string): Promise<MonsterRecord[]> {
   if (persistentStoreEnabled() && (process.env.DATABASE_URL || testPool)) {
     try {
-      const stored = await readDatabase();
+      const storedRaw = await readDatabase();
       const fallback = readJsonFile(fallbackPath);
-      if (stored) {
-        // 기존 Railway DB에 저장된 오래된 레코드 중 type(장코/단코)이 빠진 경우
-        // 현재 검증된 JSON의 값을 기준으로 자동 보완합니다.
-        const enriched = fillMissingMonsterTypes(stored, fallback);
-        if (enriched !== stored) {
+      if (storedRaw) {
+        // Correct old misspellings in persistent records, and repair missing or
+        // malformed type labels from the verified JSON data by ID/name.
+        const correctedStored = applyMonsterDataCorrections(storedRaw);
+        const enriched = fillMissingMonsterTypes(correctedStored, fallback);
+        if (JSON.stringify(enriched) !== JSON.stringify(storedRaw)) {
           await writeDatabase(enriched);
         }
         return enriched;

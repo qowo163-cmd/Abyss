@@ -3,6 +3,7 @@ import { ArrowLeftRight, Check, ChevronRight, CircleDollarSign, ClipboardCheck, 
 import { toast } from "sonner";
 import { useMembership } from "@/contexts/MembershipContext";
 import { useMonsterData } from "@/hooks/useMonsterData";
+import { monsterTypeBadgeClass, resolveMonsterType } from "@/lib/monsterType";
 import type { Monster } from "@/types/monster";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -83,7 +84,7 @@ function MonsterMeta({ monster }: { monster: MarketplaceListing["monster"] | Mar
   return (
     <div className="mt-2 flex flex-wrap gap-1.5 text-xs">
       {monster.attribute && <span className="rounded border border-cyan-400/20 bg-cyan-400/10 px-2 py-0.5 text-cyan-200">{monster.attribute}</span>}
-      {"type" in monster && monster.type && <span className="rounded border border-slate-600 bg-slate-800/80 px-2 py-0.5 text-slate-300">{monster.type}</span>}
+      {resolveMonsterType(monster) && <span className={monsterTypeBadgeClass(resolveMonsterType(monster)!, "sm")}>{resolveMonsterType(monster)}</span>}
       {level && <span className="rounded border border-slate-700 bg-slate-900/70 px-2 py-0.5 text-slate-400">Lv. {level}</span>}
     </div>
   );

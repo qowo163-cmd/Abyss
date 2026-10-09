@@ -48,4 +48,14 @@ describe("NewbieGuide", () => {
     expect(await screen.findByAltText("인첸트 3단계 엑셀 원본 가이드")).toHaveAttribute("src", "/manus-storage/test-enchant-continuous.webp");
     expect(screen.queryByText(/^안내 1$/)).not.toBeInTheDocument();
   });
+  it("keeps the newbie guide visible when the remote image manifest is unavailable", async () => {
+    vi.stubGlobal("fetch", vi.fn().mockResolvedValue(new Response("not found", { status: 404 })));
+    render(<NewbieGuide />);
+
+    expect(await screen.findByRole("heading", { name: "공식 사이트·회원가입" })).toBeInTheDocument();
+    expect(screen.getByRole("status")).toHaveTextContent("기본 텍스트 안내");
+    expect(screen.getByText("회원가입과 로그인은 안내된 공식 사이트에서 진행하세요.")).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: /공식 사이트 열기/ })).toHaveAttribute("href", "https://abyssmm.com/");
+  });
+
 });
