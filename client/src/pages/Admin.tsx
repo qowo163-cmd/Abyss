@@ -22,6 +22,7 @@ import MemberManagement from '@/pages/MemberManagement';
 import { MARKETPLACE_ALERT_TEST_EVENT } from '@/components/MarketplaceRequestNotifier';
 import type { MarketplaceRequestAlert } from '@shared/marketplaceRequestAlerts';
 import { applyMonsterBulkEdit, findAcquiredMismatches, type AcquiredMismatch } from '@/lib/monsterBulkEdit';
+import { mergeHabitats } from '@/lib/habitats';
 import { getAdminMarketplaceTabSettings, saveAdminMarketplaceTabSettings, type MarketplaceTabSettings } from '@/lib/marketplace';
 
 const normalizeChanges = (changes: unknown): string[] => {
@@ -317,7 +318,7 @@ export default function Admin() {
     }
     const edit = {
       ...(bulkAcquired === '__keep__' ? {} : { acquired: bulkAcquired }),
-      ...(clearBulkHabitat ? { habitat: '' } : bulkHabitat.trim() ? { habitat: bulkHabitat } : {}),
+      ...(clearBulkHabitat ? { clearHabitat: true } : bulkHabitat.trim() ? { habitat: bulkHabitat } : {}),
     };
     if (Object.keys(edit).length === 0) {
       toast.error('변경할 득코 여부 또는 서식지를 입력해 주세요.');
@@ -362,14 +363,19 @@ export default function Admin() {
 
   // 몬스터 수정
   const handleUpdateMonster = async (updated: Monster) => {
-    const updatedMonsters = monsters.map(m => m.id === updated.id ? updated : m);
+    // 서식지는 새 장소를 입력해도 기존 출현 장소를 보존하고 새 장소만 누적합니다.
+    const currentMonster = monsters.find((monster) => monster.id === updated.id);
+    const mergedMonster = currentMonster
+      ? { ...updated, habitat: mergeHabitats(currentMonster.habitat, updated.habitat) }
+      : updated;
+    const updatedMonsters = monsters.map(m => m.id === mergedMonster.id ? mergedMonster : m);
     const saved = await persistMonsters(updatedMonsters);
     if (!saved) return;
     setEditingMonster(null);
     await recordSiteUpdate({
       version: new Date().toISOString().slice(0, 10),
       title: '헨치 정보 수정',
-      description: `${updated.name} 헨치 정보가 수정되었습니다`,
+      description: `${mergedMonster.name} 헨치 정보가 수정되었습니다`,
       changes: ['몬스터 정보 저장', ...(updated.imageUrl ? ['헨치 이미지 반영'] : []), ...(updated.xAntibody ? [`X데이터 ${updated.xAntibody}개 필요 정보 반영`] : [])],
       type: 'improvement',
     });
@@ -1162,7 +1168,7 @@ export default function Admin() {
                   <option value="x">득코 불가능으로 변경</option>
                 </select>
                 <div className="flex items-center gap-2">
-                  <Input aria-label="일괄 서식지" value={bulkHabitat} onChange={(event) => setBulkHabitat(event.target.value)} placeholder="변경할 서식지 (비우면 유지)" disabled={clearBulkHabitat} className="bg-slate-900 border-slate-700 disabled:opacity-50" />
+                  <Input aria-label="일괄 서식지" value={bulkHabitat} onChange={(event) => setBulkHabitat(event.target.value)} placeholder="추가할 서식지 (기존 서식지는 유지)" disabled={clearBulkHabitat} className="bg-slate-900 border-slate-700 disabled:opacity-50" />
                 </div>
                 <Button type="button" onClick={() => void handleBulkMonsterEdit()} className="bg-cyan-500 text-slate-950 hover:bg-cyan-400">일괄 반영</Button>
               </div>
@@ -1310,7 +1316,7 @@ export default function Admin() {
                     />
                   </div>
                   <div className="sm:col-span-2">
-                    <label className="text-xs font-medium text-slate-300">서식지</label>
+                    <label className="text-xs font-medium text-slate-300">서식지 (기존 장소 유지, 새 장소 추가)</label>
                     <Input
                       value={editingMonster.habitat}
                       onChange={(e) => setEditingMonster({ ...editingMonster, habitat: e.target.value })}
