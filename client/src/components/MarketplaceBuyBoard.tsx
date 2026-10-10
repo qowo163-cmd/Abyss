@@ -8,6 +8,7 @@ import { ScrollArea } from "@/components/ui/scroll-area";
 import { Textarea } from "@/components/ui/textarea";
 import { MarketplaceAveragePrice, MarketplaceMonsterImage } from "@/components/MarketplaceMarketInfo";
 import { cn } from "@/lib/utils";
+import { monsterTypeBadgeClass, resolveMonsterType } from "@/lib/monsterType";
 import {
   cancelMarketplaceBuyOrder,
   getMarketplaceBuyOrders,
@@ -31,7 +32,7 @@ function orderStatusLabel(status: MarketplaceBuyOrder["status"]) {
 
 function MonsterSummary({ monster }: { monster: MarketplaceBuyOrder["monster"] | Monster }) {
   const level = "level" in monster ? monster.level : `${monster.baseLevel} ~ ${monster.maxLevel}`;
-  return <div className="mt-2 flex flex-wrap gap-1.5 text-xs">{monster.attribute && <span className="rounded border border-violet-400/20 bg-violet-400/10 px-2 py-0.5 text-violet-200">{monster.attribute}</span>}{"type" in monster && monster.type && <span className="rounded border border-slate-600 bg-slate-800 px-2 py-0.5 text-slate-300">{monster.type}</span>}{level && <span className="whitespace-nowrap rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-slate-400">Lv. {level}</span>}</div>;
+  return <div className="mt-2 flex flex-wrap gap-1.5 text-xs">{monster.attribute && <span className="rounded border border-violet-400/20 bg-violet-400/10 px-2 py-0.5 text-violet-200">{monster.attribute}</span>}{resolveMonsterType(monster) && <span className={monsterTypeBadgeClass(resolveMonsterType(monster)!, "sm")}>{resolveMonsterType(monster)}</span>}{level && <span className="whitespace-nowrap rounded border border-slate-700 bg-slate-900 px-2 py-0.5 text-slate-400">Lv. {level}</span>}</div>;
 }
 
 function OfferStatus({ status }: { status: MarketplaceRequestStatus }) {

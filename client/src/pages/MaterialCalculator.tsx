@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { attributeImages } from '@/data/attributeImages';
 import { Calculator, Search, GitBranch, RotateCcw } from 'lucide-react';
 import { useMonsterData } from '@/hooks/useMonsterData';
+import { monsterTypeBadgeClass, resolveMonsterType } from '@/lib/monsterType';
 import {
   calculateMaterialCounts,
   collectRecipeChoices,
@@ -16,6 +17,9 @@ interface Monster {
   baseLevel?: number;
   maxLevel?: number;
   attribute: string;
+  type?: '장코' | '단코' | string;
+  acquired?: '0' | 'x' | string;
+  habitat?: string | null;
   main?: string | null;
   sub?: string | null;
   main2?: string | null;
@@ -34,6 +38,7 @@ export default function MaterialCalculator() {
   const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
   const [quantity, setQuantity] = useState(1);
   const [checkedMaterials, setCheckedMaterials] = useState<Set<string>>(new Set());
+  const [expandedMaterial, setExpandedMaterial] = useState<string | null>(null);
   const [recipeSelections, setRecipeSelections] = useState<RecipeSelections>({});
 
   const searchResults = useMemo(() => {
@@ -92,6 +97,7 @@ export default function MaterialCalculator() {
   const setRecipeSelection = (monster: Monster, optionIndex: number) => {
     setRecipeSelections((current) => ({ ...current, [monster.id]: optionIndex }));
     setCheckedMaterials(new Set());
+    setExpandedMaterial(null);
   };
 
   const selectMonster = (monster: Monster) => {
@@ -99,6 +105,7 @@ export default function MaterialCalculator() {
     setShowDropdown(false);
     setSearchQuery('');
     setCheckedMaterials(new Set());
+    setExpandedMaterial(null);
     setRecipeSelections({});
   };
 
@@ -127,6 +134,7 @@ export default function MaterialCalculator() {
         <div className="mb-3 flex items-start justify-between gap-3">
           <div className="min-w-0">
             <p className="truncate text-sm font-bold text-cyan-300">{monster.name}</p>
+            <p className="mt-0.5 text-xs font-semibold text-slate-300">서식지: {monster.habitat?.trim() || '정보 없음'}</p>
             <p className="mt-0.5 text-xs text-slate-500">조합법 {options.length}가지 · 계산에 사용할 조합</p>
           </div>
           <span className="shrink-0 rounded-full border border-cyan-500/20 px-2 py-0.5 text-[10px] text-slate-400">
@@ -350,27 +358,83 @@ export default function MaterialCalculator() {
               {sortedMaterials.length > 0 ? (
                 <>
                   <div className="space-y-2">
-                    {sortedMaterials.map((material) => (
-                      <label
-                        key={material.name}
-                        className={`flex cursor-pointer items-center gap-3 rounded-lg border p-3 transition-colors ${
-                          material.isChecked
-                            ? 'border-slate-700 bg-slate-700/40 text-slate-500'
-                            : 'border-slate-700/70 bg-slate-900/20 text-white hover:border-cyan-500/30'
-                        }`}
-                      >
-                        <input
-                          type="checkbox"
-                          checked={material.isChecked}
-                          onChange={() => toggleMaterialCheck(material.name)}
-                          className="h-4 w-4 cursor-pointer accent-cyan-400"
-                        />
-                        <span className={`flex-1 ${material.isChecked ? 'line-through' : ''}`}>{material.name}</span>
-                        <span className={`font-bold ${material.isChecked ? 'text-slate-500' : 'text-cyan-300'}`}>
-                          {material.count}마리
-                        </span>
-                      </label>
-                    ))}
+                    {sortedMaterials.map((material) => {
+                      const materialMonster = monsters.find(
+                        (monster) => compactName(monster.name.toLowerCase()) === compactName(material.name.toLowerCase()),
+                      );
+                      const detailRecipes = materialMonster ? getRecipeOptions(materialMonster) : [];
+                      const isExpanded = expandedMaterial === material.name;
+                      const acquiredStatus = materialMonster?.acquired === '0' ? '가능' : materialMonster?.acquired === 'x' ? '불가능' : '정보 없음';
+
+                      return (
+                        <div key={material.name} className="space-y-2">
+                          <div
+                            className={`flex items-center gap-3 rounded-lg border p-3 transition-colors ${
+                              material.isChecked
+                                ? 'border-slate-700 bg-slate-700/40 text-slate-500'
+                                : isExpanded
+                                  ? 'border-cyan-400/70 bg-cyan-950/40 text-white'
+                                  : 'border-slate-700/70 bg-slate-900/20 text-white hover:border-cyan-500/30'
+                            }`}
+                          >
+                            <input
+                              type="checkbox"
+                              checked={material.isChecked}
+                              onChange={() => toggleMaterialCheck(material.name)}
+                              className="h-4 w-4 cursor-pointer accent-cyan-400"
+                            />
+                            <button
+                              type="button"
+                              onClick={() => setExpandedMaterial((current) => (current === material.name ? null : material.name))}
+                              aria-expanded={isExpanded}
+                              className={`min-w-0 flex-1 text-left font-semibold underline-offset-4 hover:underline ${material.isChecked ? 'line-through text-slate-500' : 'text-white'}`}
+                            >
+                              {material.name}
+                            </button>
+                            <span className={`font-bold ${material.isChecked ? 'text-slate-500' : 'text-cyan-300'}`}>
+                              {material.count}마리
+                            </span>
+                          </div>
+
+                          {isExpanded && materialMonster && (
+                            <div className="rounded-xl border-2 border-cyan-500/40 bg-slate-950/90 p-4 shadow-lg">
+                              <div className="flex flex-wrap items-center gap-2">
+                                <span className="rounded-md border border-slate-600 bg-slate-800 px-2.5 py-1 text-xs font-bold text-white">
+                                  Lv.{materialMonster.baseLevel ?? '-'}{materialMonster.maxLevel ? `~${materialMonster.maxLevel}` : ''}
+                                </span>
+                                {resolveMonsterType(materialMonster) && <span className={monsterTypeBadgeClass(resolveMonsterType(materialMonster)!, 'sm')}>{resolveMonsterType(materialMonster)}</span>}
+                                <span className={`rounded-md border px-2.5 py-1 text-xs font-black ${acquiredStatus === '가능' ? 'border-green-400 bg-green-700 text-green-50' : acquiredStatus === '불가능' ? 'border-red-400 bg-red-700 text-red-50' : 'border-slate-500 bg-slate-700 text-slate-100'}`}>
+                                  {acquiredStatus === '가능' ? '✓ 득코 가능' : acquiredStatus === '불가능' ? '✕ 득코 불가능' : '득코 정보 없음'}
+                                </span>
+                              </div>
+
+                              <div className="mt-3 rounded-lg border border-cyan-500/30 bg-slate-900 p-3">
+                                <p className="text-xs font-black text-cyan-300">서식지</p>
+                                <p className="mt-1 break-words text-sm font-semibold leading-6 text-white">{materialMonster.habitat?.trim() || '정보 없음'}</p>
+                              </div>
+
+                              <div className="mt-3 rounded-lg border border-violet-500/30 bg-slate-900 p-3">
+                                <p className="text-xs font-black text-violet-300">믹스법</p>
+                                {detailRecipes.length > 0 ? (
+                                  <div className="mt-2 space-y-2">
+                                    {detailRecipes.map((recipe, index) => (
+                                      <div key={`${materialMonster.id}-detail-${recipe.index}`} className="rounded-lg border border-violet-400/40 bg-violet-950/50 px-3 py-2.5 text-sm font-semibold text-white">
+                                        <span className="mr-2 text-xs font-black text-violet-300">조합 {index + 1}</span>
+                                        <span>{recipe.main}</span>
+                                        <span className="mx-2 font-black text-cyan-300">+</span>
+                                        <span>{recipe.sub}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                ) : (
+                                  <p className="mt-2 text-sm font-semibold text-slate-300">저장된 조합법이 없습니다.</p>
+                                )}
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      );
+                    })}
                   </div>
 
                   <div className="mt-4 rounded-xl border border-slate-700 bg-slate-900/20 p-4">

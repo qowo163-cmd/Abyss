@@ -2,6 +2,7 @@ import { Monster } from '@/types/monster';
 import { attributeColors, attributeImages } from '@/data/attributeImages';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { cn } from '@/lib/utils';
+import { resolveMonsterType } from '@/lib/monsterType';
 import { Heart, MapPin, Zap } from 'lucide-react';
 
 interface MonsterDetailModalProps {
@@ -17,6 +18,7 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
 
   const colors = attributeColors[monster.attribute] || attributeColors['악마'];
   const image = monster.imageUrl || attributeImages[monster.attribute] || attributeImages['악마'];
+  const monsterType = resolveMonsterType(monster);
 
   const handleMonsterClick = (monsterName: string) => {
     // [숫자] 제거 및 공백 정규화
@@ -58,7 +60,7 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent data-testid="monster-detail-card" className="abyss-dim-card mx-2 max-h-[85vh] w-full max-w-2xl overflow-y-auto border-cyan-200/35 sm:mx-0 sm:max-h-[90vh] sm:max-w-3xl">
+      <DialogContent data-testid="monster-detail-card" className="abyss-detail-modal abyss-dim-card mx-2 max-h-[85vh] w-full max-w-2xl overflow-y-auto border-cyan-700 sm:mx-0 sm:max-h-[90vh] sm:max-w-3xl">
         <DialogHeader>
           <DialogTitle className="text-cyan-300">{monster.name}</DialogTitle>
           <DialogDescription className="sr-only">{monster.name}의 상세 정보와 믹스 재료</DialogDescription>
@@ -85,15 +87,11 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
                 <div className="absolute inset-0 bg-gradient-to-t from-slate-950 via-transparent to-transparent" />
 
                 {/* 속성 배지 */}
-                <div className={cn('absolute right-3 top-3 rounded-full px-3 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-bold', colors.text, colors.bg)}>
+                <div className={cn('absolute right-3 top-3 rounded-full border px-3 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-black shadow-lg', colors.text, colors.bg)}>
                   {monster.attribute}
                 </div>
                 {/* 장코/단코 배지 */}
-                {monster.type && (
-                  <div className={cn('absolute left-3 top-3 rounded-full px-3 sm:px-4 py-1 sm:py-2 text-xs sm:text-sm font-bold', monster.type === '장코' ? 'bg-amber-100 text-amber-800' : 'bg-sky-100 text-sky-800')}>
-                    {monster.type}
-                  </div>
-                )}
+                {monsterType && <div className={cn('absolute left-3 top-3 rounded-full border-2 px-3 py-1.5 text-xs font-black shadow-lg sm:px-4 sm:py-2 sm:text-sm', monsterType === '장코' ? 'border-amber-200 bg-amber-100 text-amber-950' : 'border-sky-200 bg-sky-100 text-sky-950')}>{monsterType}</div>}
               </div>
             </div>
 
@@ -136,7 +134,7 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
 
           {/* 믹스 공식 */}
           {(monster.main || monster.sub || monster.main2 || monster.sub2) && (
-            <div className="abyss-mix-formula abyss-dim-card rounded-lg border p-3 sm:p-4">
+            <div className="abyss-detail-mix-shell abyss-dim-card rounded-lg border p-3 sm:p-4">
               <div className="flex items-center gap-2 mb-3 sm:mb-4">
                 <Zap className="h-3 w-3 sm:h-4 sm:w-4 text-yellow-400" />
                 <h4 className="text-xs sm:text-sm font-semibold text-cyan-300">믹스 공식</h4>
@@ -145,19 +143,19 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
               <div className="space-y-3">
                 {/* 메인 믹스 */}
                 {(monster.main || monster.sub) && (
-                  <div className="abyss-mix-formula-row abyss-dim-card rounded-lg border p-3">
+                  <div className="abyss-detail-mix-row abyss-dim-card rounded-lg border p-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       {monster.main && (
                         <>
                           <div className="flex flex-col gap-1">
                             <button
                               onClick={() => handleMonsterClick(monster.main!)}
-                              className="inline-block rounded-lg bg-purple-500/20 hover:bg-purple-500/40 px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-purple-300 border border-purple-400/50 transition-colors cursor-pointer"
+                              className="abyss-detail-main-chip inline-block rounded-lg px-2 sm:px-3 py-1 text-xs sm:text-sm font-black transition-colors cursor-pointer"
                             >
                               {monster.main}
                             </button>
                             {getMonsterAcquiredStatus(monster.main) && (
-                              <span className="abyss-acquired-label-text text-xs text-green-400 font-semibold">득코 가능</span>
+                              <span className="abyss-detail-acquired-inline text-xs font-black">득코 가능</span>
                             )}
                           </div>
                           <span className="text-sm font-bold text-slate-400">+</span>
@@ -168,18 +166,18 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
                           <div className="flex flex-col gap-1">
                             <button
                               onClick={() => handleMonsterClick(monster.sub!)}
-                              className="inline-block rounded-lg bg-blue-500/20 hover:bg-blue-500/40 px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-blue-300 border border-blue-400/50 transition-colors cursor-pointer"
+                              className="abyss-detail-sub-chip inline-block rounded-lg px-2 sm:px-3 py-1 text-xs sm:text-sm font-black transition-colors cursor-pointer"
                             >
                               {monster.sub}
                             </button>
                             {getMonsterAcquiredStatus(monster.sub) && (
-                              <span className="abyss-acquired-label-text text-xs text-green-400 font-semibold">득코 가능</span>
+                              <span className="abyss-detail-acquired-inline text-xs font-black">득코 가능</span>
                             )}
                           </div>
                           <span className="text-sm font-bold text-slate-400">=</span>
                         </>
                       )}
-                      <span className="inline-block rounded-lg bg-cyan-500/20 px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-cyan-300 border border-cyan-400/50">
+                      <span className="abyss-detail-result-chip inline-block rounded-lg px-2 sm:px-3 py-1 text-xs sm:text-sm font-black">
                         {monster.name}
                       </span>
                     </div>
@@ -188,19 +186,19 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
 
                 {/* 추가 믹스 */}
                 {(monster.main2 || monster.sub2) && (
-                  <div className="abyss-mix-formula-row abyss-dim-card rounded-lg border p-3">
+                  <div className="abyss-detail-mix-row abyss-dim-card rounded-lg border p-3">
                     <div className="flex items-center gap-2 flex-wrap">
                       {monster.main2 && (
                         <>
                           <div className="flex flex-col gap-1">
                             <button
                               onClick={() => handleMonsterClick(monster.main2!)}
-                              className="inline-block rounded-lg bg-purple-500/20 hover:bg-purple-500/40 px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-purple-300 border border-purple-400/50 transition-colors cursor-pointer"
+                              className="abyss-detail-main-chip inline-block rounded-lg px-2 sm:px-3 py-1 text-xs sm:text-sm font-black transition-colors cursor-pointer"
                             >
                               {monster.main2}
                             </button>
                             {getMonsterAcquiredStatus(monster.main2) && (
-                              <span className="abyss-acquired-label-text text-xs text-green-400 font-semibold">득코 가능</span>
+                              <span className="abyss-detail-acquired-inline text-xs font-black">득코 가능</span>
                             )}
                           </div>
                           <span className="text-sm font-bold text-slate-400">+</span>
@@ -211,18 +209,18 @@ export function MonsterDetailModal({ monster, isOpen, onClose, onSelectMonster, 
                           <div className="flex flex-col gap-1">
                             <button
                               onClick={() => handleMonsterClick(monster.sub2!)}
-                              className="inline-block rounded-lg bg-blue-500/20 hover:bg-blue-500/40 px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-blue-300 border border-blue-400/50 transition-colors cursor-pointer"
+                              className="abyss-detail-sub-chip inline-block rounded-lg px-2 sm:px-3 py-1 text-xs sm:text-sm font-black transition-colors cursor-pointer"
                             >
                               {monster.sub2}
                             </button>
                             {getMonsterAcquiredStatus(monster.sub2) && (
-                              <span className="abyss-acquired-label-text text-xs text-green-400 font-semibold">득코 가능</span>
+                              <span className="abyss-detail-acquired-inline text-xs font-black">득코 가능</span>
                             )}
                           </div>
                           <span className="text-sm font-bold text-slate-400">=</span>
                         </>
                       )}
-                      <span className="inline-block rounded-lg bg-cyan-500/20 px-2 sm:px-3 py-1 text-xs sm:text-sm font-semibold text-cyan-300 border border-cyan-400/50">
+                      <span className="abyss-detail-result-chip inline-block rounded-lg px-2 sm:px-3 py-1 text-xs sm:text-sm font-black">
                         {monster.name}
                       </span>
                     </div>

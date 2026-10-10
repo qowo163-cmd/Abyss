@@ -3,6 +3,7 @@ import { Input } from '@/components/ui/input';
 import { ChevronDown, X } from 'lucide-react';
 import { attributeImages } from '@/data/attributeImages';
 import { useMonsterData } from '@/hooks/useMonsterData';
+import { monsterTypeBadgeClass, resolveMonsterType } from '@/lib/monsterType';
 import { getRecipeIngredients, normalizeRecipeName, compactRecipeName } from '@/lib/recipeResolver';
 
 interface Monster {
@@ -144,17 +145,7 @@ export default function ReverseRecipe() {
                 <p className="text-xs sm:text-sm font-semibold text-cyan-300">
                   {node.monster.name}
                 </p>
-                {node.monster.type && (
-                  <span
-                    className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${
-                      node.monster.type === '장코'
-                        ? 'border-amber-500 bg-amber-100 text-amber-800'
-                        : 'border-sky-500 bg-sky-100 text-sky-800'
-                    }`}
-                  >
-                    {node.monster.type}
-                  </span>
-                )}
+                {resolveMonsterType(node.monster) && <span className={monsterTypeBadgeClass(resolveMonsterType(node.monster)!, 'xs')}>{resolveMonsterType(node.monster)}</span>}
               </div>
               <p className="text-xs text-slate-400">
                 Lv.{node.monster.baseLevel || 0}~{node.monster.maxLevel || 0}
@@ -232,7 +223,7 @@ export default function ReverseRecipe() {
                   <div className="flex-1">
                     <div className="flex items-center gap-2">
                       <p className="text-white font-semibold text-sm">{monster.name}</p>
-                      {monster.type && <span className={`rounded-md border px-1.5 py-0.5 text-[10px] font-bold ${monster.type === '장코' ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-sky-500 bg-sky-100 text-sky-800'}`}>{monster.type}</span>}
+                      {resolveMonsterType(monster) && <span className={monsterTypeBadgeClass(resolveMonsterType(monster)!, 'xs')}>{resolveMonsterType(monster)}</span>}
                     </div>
                     <p className="text-xs text-slate-400">
                       Lv.{monster.baseLevel || 0}~{monster.maxLevel || 0} | {monster.attribute}
@@ -269,7 +260,7 @@ export default function ReverseRecipe() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <p className="text-white font-semibold text-lg">{selectedMonster.name}</p>
-                    {selectedMonster.type && <span className={`rounded-md border px-2 py-0.5 text-xs font-bold ${selectedMonster.type === '장코' ? 'border-amber-500 bg-amber-100 text-amber-800' : 'border-sky-500 bg-sky-100 text-sky-800'}`}>{selectedMonster.type}</span>}
+                    {resolveMonsterType(selectedMonster) && <span className={monsterTypeBadgeClass(resolveMonsterType(selectedMonster)!, 'sm')}>{resolveMonsterType(selectedMonster)}</span>}
                   </div>
                   <p className="text-sm text-slate-400">
                     Lv.{selectedMonster.baseLevel || 0}~{selectedMonster.maxLevel || 0} | {selectedMonster.attribute}

@@ -76,7 +76,7 @@ export default function Updates() {
       <header className="border-b border-cyan-500/20 bg-gradient-to-b from-slate-900 to-slate-900/80 backdrop-blur-sm sticky top-0 z-50">
         <div className="px-4 sm:px-6 py-3 sm:py-4">
           <h1 className="text-lg sm:text-2xl font-bold text-cyan-300">업데이트 내역</h1>
-          <p className="text-xs sm:text-sm text-slate-400">ABYSS서버 믹스사이트의 최신 업데이트와 변경 이력을 확인하세요</p>
+          <p className="text-xs sm:text-sm text-slate-300">ABYSS서버 믹스사이트의 최신 업데이트와 변경 이력을 확인하세요</p>
         </div>
       </header>
 
@@ -102,23 +102,23 @@ export default function Updates() {
                     <div className="flex items-start justify-between gap-4 mb-3">
                       <div>
                         <div className="flex items-center gap-2 mb-1">
-                          <span className="text-xs font-bold text-cyan-400 bg-cyan-500/10 px-2 py-1 rounded">{update.version}</span>
-                          <span className="text-xs font-medium text-slate-400 bg-slate-700/50 px-2 py-1 rounded">{getTypeLabel(update.type)}</span>
+                          <span className="text-xs font-extrabold text-cyan-50 bg-cyan-900/70 border border-cyan-400/40 px-2 py-1 rounded">{update.version}</span>
+                          <span className="text-xs font-bold text-slate-100 bg-slate-700 border border-slate-500 px-2 py-1 rounded">{getTypeLabel(update.type)}</span>
                         </div>
                         <h3 className="text-sm sm:text-base font-bold text-cyan-300">{update.title}</h3>
                       </div>
-                      <div className="flex items-center gap-2 text-xs text-slate-400 flex-shrink-0">
+                      <div className="flex items-center gap-2 text-xs text-slate-200 flex-shrink-0">
                         <Clock className="h-4 w-4" />
                         {new Date(update.date).toLocaleDateString('ko-KR')}
                       </div>
                     </div>
 
-                    <p className="text-sm text-slate-300 mb-3">{update.description}</p>
+                    <p className="text-sm font-medium text-slate-100 mb-3">{update.description}</p>
                     <div className="space-y-2">
-                      <p className="text-xs font-semibold text-slate-400">변경사항:</p>
+                      <p className="text-xs font-bold text-slate-200">변경사항:</p>
                       <ul className="space-y-1">
                         {displayChanges.map((change, idx) => (
-                          <li key={idx} className="text-xs text-slate-400 flex gap-2">
+                          <li key={idx} className="text-xs font-medium text-slate-200 flex gap-2">
                             <span className="text-cyan-400 flex-shrink-0">•</span>
                             <span>{change}</span>
                           </li>
@@ -133,7 +133,7 @@ export default function Updates() {
         </div>
 
         <div className="mt-8 text-center">
-          <p className="text-sm text-slate-400">관리자가 사이트를 수정하면 이곳에 변경 내역이 자동으로 추가됩니다.</p>
+          <p className="text-sm text-slate-200">GitHub 변경 사항은 Railway 배포가 완료되면 이곳에 자동으로 기록됩니다.</p>
         </div>
       </div>
     </div>

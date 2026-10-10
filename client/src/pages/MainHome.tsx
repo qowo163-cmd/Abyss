@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Link } from 'wouter';
 import {
   ArrowUpRight,
@@ -20,12 +20,14 @@ import {
   Wand2,
 } from 'lucide-react';
 import updates from '@/data/updates.json';
+import { fetchServerUpdates, mergeUpdates, normalizeUpdates, readLocalUpdates, subscribeToServerUpdates, type UpdateItem } from '@/lib/updates';
 import { attributeImages } from '@/data/attributeImages';
 import { splitHabitats } from '@/lib/habitats';
 import { useMonsterData } from '@/hooks/useMonsterData';
 import type { AttributeType } from '@/types/monster';
 
 const ATTRIBUTES: AttributeType[] = ['드래곤', '악마', '짐승', '새', '곤충', '식물', '미스터리', '메탈'];
+const defaultUpdates = normalizeUpdates(updates);
 
 const PRIMARY_TOOLS = [
   {
@@ -102,12 +104,13 @@ const ACCENT_STYLES = {
 } as const;
 
 function formatUpdateDate(date: string) {
-  const [year, month, day] = date.split('-');
-  return year && month && day ? `${month}.${day}` : date;
+  const parsed = new Date(date);
+  return Number.isNaN(parsed.getTime()) ? date : parsed.toLocaleDateString('ko-KR', { month: '2-digit', day: '2-digit' });
 }
 
 export default function MainHome() {
   const monsters = useMonsterData();
+  const [recentUpdateItems, setRecentUpdateItems] = useState<UpdateItem[]>(defaultUpdates);
   const [discordCode, setDiscordCode] = useState<string | null>(null);
   const [discordLoading, setDiscordLoading] = useState(false);
   const [discordError, setDiscordError] = useState('');
@@ -134,6 +137,32 @@ export default function MainHome() {
     }
   };
 
+  useEffect(() => {
+    let active = true;
+    const applyUpdates = (serverUpdates: UpdateItem[]) => {
+      if (!active) return;
+      setRecentUpdateItems(mergeUpdates(serverUpdates, defaultUpdates));
+    };
+    const refreshUpdates = async () => {
+      try {
+        applyUpdates(await fetchServerUpdates());
+      } catch (error) {
+        console.error('Failed to load home update history:', error);
+        applyUpdates(mergeUpdates(readLocalUpdates(), defaultUpdates));
+      }
+    };
+    void refreshUpdates();
+    const unsubscribe = subscribeToServerUpdates(applyUpdates);
+    const interval = window.setInterval(() => void refreshUpdates(), 30_000);
+    window.addEventListener('updates-updated', refreshUpdates);
+    return () => {
+      active = false;
+      unsubscribe();
+      window.clearInterval(interval);
+      window.removeEventListener('updates-updated', refreshUpdates);
+    };
+  }, []);
+
   const overview = useMemo(() => {
     const attributeCounts: Record<AttributeType, number> = Object.fromEntries(
       ATTRIBUTES.map((attribute) => [attribute, 0]),
@@ -154,7 +183,7 @@ export default function MainHome() {
     return { attributeCounts, habitats: habitats.size, acquired, mixReady };
   }, [monsters]);
 
-  const latestUpdates = updates.slice(0, 3);
+  const latestUpdates = recentUpdateItems.slice(0, 3);
 
   return (
     <div className="abyss-fantasy-page min-h-screen overflow-hidden bg-transparent pb-24 text-slate-100 md:pb-10">
@@ -363,7 +392,7 @@ export default function MainHome() {
               {latestUpdates.map((update) => (
                 <Link key={update.id} href="/updates" className="group flex gap-3 rounded-xl p-3 transition hover:bg-white/[0.045]">
                   <div className="min-w-11 pt-0.5 text-xs font-black text-cyan-200">{formatUpdateDate(update.date)}</div>
-                  <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-bold text-slate-100 transition group-hover:text-cyan-100">{update.title}</p><span className="rounded bg-white/[0.07] px-1.5 py-0.5 text-[10px] font-bold text-slate-400">{update.version}</span></div><p className="mt-1 line-clamp-1 text-xs leading-5 text-slate-400">{update.description}</p></div>
+                  <div className="min-w-0"><div className="flex flex-wrap items-center gap-2"><p className="font-bold text-slate-100 transition group-hover:text-cyan-100">{update.title}</p><span className="rounded border border-white/15 bg-slate-700 px-1.5 py-0.5 text-[10px] font-extrabold text-slate-100">{update.version}</span></div><p className="mt-1 line-clamp-1 text-xs leading-5 text-slate-300">{update.description}</p></div>
                 </Link>
               ))}
             </div>

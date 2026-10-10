@@ -1275,7 +1275,10 @@ async function startServer() {
       "X-Accel-Buffering": "no",
     });
     updateSubscribers.add(res);
-    listSiteUpdates()
+    // Retry startup reconciliation when a visitor opens the live update stream.
+    // This recovers automatically if the first attempt ran before MySQL was ready.
+    void reconcileCurrentRailwayDeploymentUpdate()
+      .then(() => listSiteUpdates())
       .then((updates) => res.write(`event: updates\ndata: ${JSON.stringify(updates)}\n\n`))
       .catch((error) => console.error("Failed to load updates for stream:", error));
     const heartbeat = setInterval(() => res.write(": heartbeat\n\n"), 25_000);
@@ -1287,6 +1290,8 @@ async function startServer() {
 
   app.get("/api/updates", async (_req, res) => {
     try {
+      // Retry the current commit check on demand as well as at startup/webhook time.
+      await reconcileCurrentRailwayDeploymentUpdate();
       res.setHeader("Cache-Control", "no-store");
       res.json(await listSiteUpdates());
     } catch (error) {

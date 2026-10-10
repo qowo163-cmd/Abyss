@@ -15,7 +15,7 @@ const PRIMARY_ITEMS: MobileNavItem[] = [
   { label: "헨치", path: "/hench", icon: Users },
   { label: "믹스법", path: "/tree", icon: GitBranch },
   { label: "거래소", path: "/marketplace", icon: Store },
-  { label: "가이드", path: "/guide", icon: BookOpenCheck },
+  { label: "뉴비가이드", path: "/guide", icon: BookOpenCheck },
 ];
 
 const MORE_ITEMS: MobileNavItem[] = [
