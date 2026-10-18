@@ -61,8 +61,10 @@ describe("SideNavigation logout", () => {
     render(<SideNavigation currentPath="/marketplace" onLogout={vi.fn()} />);
 
     const labels = screen.getAllByRole("link").map((link) => link.textContent);
+    expect(screen.getByRole("link", { name: "믹스법2" })).toHaveAttribute("href", "/tree2");
     expect(screen.getByRole("link", { name: "역산믹스법" })).toHaveAttribute("href", "/reverse");
-    expect(labels.indexOf("역산믹스법")).toBe(labels.indexOf("믹스법") + 1);
+    expect(labels.indexOf("믹스법2")).toBe(labels.indexOf("믹스법") + 1);
+    expect(labels.indexOf("역산믹스법")).toBe(labels.indexOf("믹스법2") + 1);
     expect(labels.indexOf("거래소")).toBe(labels.indexOf("역산믹스법") + 1);
     expect(screen.getByRole("link", { name: "재료계산기" })).toHaveAttribute("href", "/material-calculator");
   });

@@ -50,6 +50,12 @@ const NAV_ITEMS: NavItem[] = [
     path: '/tree',
   },
   {
+    id: 'tree2',
+    label: '믹스법2',
+    icon: <GitBranch className="h-5 w-5" />,
+    path: '/tree2',
+  },
+  {
     id: 'reverse-tree',
     label: '역산믹스법',
     icon: <GitBranch className="h-5 w-5" />,

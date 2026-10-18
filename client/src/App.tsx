@@ -20,6 +20,7 @@ const HenchList = React.lazy(() => import("./pages/HenchList"));
 const LevelCalculator = React.lazy(() => import("./pages/LevelCalculator"));
 const MaterialCalculator = React.lazy(() => import("./pages/MaterialCalculator"));
 const ReverseTree = React.lazy(() => import("./pages/ReverseTree"));
+const MixTreeTable = React.lazy(() => import("./pages/MixTreeTable"));
 const ReverseRecipe = React.lazy(() => import("./pages/ReverseRecipe"));
 const Favorites = React.lazy(() => import("./pages/Favorites"));
 const Admin = React.lazy(() => import("./pages/Admin"));
@@ -73,6 +74,7 @@ function Router() {
             <Route path={"/calculator"} component={LevelCalculator} />
             <Route path={"/material-calculator"} component={MaterialCalculator} />
             <Route path={"/tree"} component={ReverseTree} />
+            <Route path={"/tree2"} component={MixTreeTable} />
             <Route path={"/reverse"} component={ReverseRecipe} />
             <Route path={"/marketplace"} component={Marketplace} />
             <Route path={"/guide"} component={NewbieGuide} />

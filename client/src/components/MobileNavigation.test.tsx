@@ -18,6 +18,7 @@ describe("MobileNavigation", () => {
     fireEvent.click(screen.getByRole("button", { name: "전체 메뉴" }));
     expect(screen.getByRole("link", { name: "레벨계산기" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "역산믹스법" })).toBeInTheDocument();
+    expect(screen.getByRole("link", { name: "믹스법2" })).toHaveAttribute("href", "/tree2");
     expect(screen.getByRole("link", { name: "레벨계산기" }).querySelector("span")).toHaveClass("whitespace-nowrap");
     expect(screen.queryByRole("link", { name: "관리자 대시보드" })).not.toBeInTheDocument();
   });
