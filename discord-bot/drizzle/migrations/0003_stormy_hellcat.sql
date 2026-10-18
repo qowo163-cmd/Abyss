@@ -1,1 +1,0 @@
-ALTER TABLE `monster_data_store` MODIFY COLUMN `data` longtext NOT NULL;

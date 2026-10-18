@@ -1,1 +1,0 @@
-ALTER TABLE `marketplace_item_listings` ADD `price_currency` varchar(12) DEFAULT 'boxes' NOT NULL;
