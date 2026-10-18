@@ -43,13 +43,29 @@ describe("MaterialCalculator multiple recipes", () => {
     expect(screen.getByText("대체부재료")).toBeInTheDocument();
   });
 
-  it("keeps the 140~169 label and material quantity units", async () => {
+  it("shows the general material list label and material quantity units", async () => {
     render(<MaterialCalculator />);
     fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
     fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
     await waitFor(() => {
-      expect(screen.getByText("140~169 레벨 재료")).toBeInTheDocument();
+      expect(screen.getByText("필요 재료 목록")).toBeInTheDocument();
       expect(screen.getAllByText(/마리$/).length).toBeGreaterThan(0);
     });
   });
+
+  it("shows a selected monster directly when it has no sub-mix recipe", async () => {
+    monsters.push({ id: "leaf", name: "네펠레맨", main: "-", sub: "-", attribute: "짐승", baseLevel: 95, maxLevel: 120, acquired: "0" });
+    try {
+      render(<MaterialCalculator />);
+      fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "네펠레맨" } });
+      fireEvent.click(await screen.findByRole("button", { name: /네펠레맨/ }));
+
+      expect(screen.getByText("필요 재료 목록")).toBeInTheDocument();
+      expect(screen.getByText("네펠레맨", { selector: "button" })).toBeInTheDocument();
+      expect(screen.getAllByText("1마리").length).toBeGreaterThan(0);
+    } finally {
+      monsters.pop();
+    }
+  });
+
 });

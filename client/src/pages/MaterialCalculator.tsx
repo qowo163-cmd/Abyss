@@ -177,7 +177,7 @@ export default function MaterialCalculator() {
           <Calculator className="h-8 w-8 text-cyan-400" />
           <div>
             <h1 className="text-3xl font-bold text-cyan-300">재료 계산기</h1>
-            <p className="mt-1 text-xs text-slate-500">140~169레벨의 최종 재료만 집계합니다.</p>
+            <p className="mt-1 text-xs text-slate-500">득코 불가능한 헨치는 하위 믹스로 펼치고, 하위 조합이 없는 헨치는 직접 재료로 표시합니다.</p>
           </div>
         </div>
 
@@ -228,7 +228,7 @@ export default function MaterialCalculator() {
           <div className="rounded-xl border border-dashed border-cyan-500/20 bg-slate-800/30 py-20 text-center">
             <GitBranch className="mx-auto mb-3 h-10 w-10 text-slate-600" />
             <p className="text-lg font-semibold text-slate-300">만들 헨치를 선택해 주세요</p>
-            <p className="mt-1 text-sm text-slate-500">선택한 헨치의 믹스법을 고르고 필요한 140~169레벨 재료를 확인할 수 있습니다.</p>
+            <p className="mt-1 text-sm text-slate-500">믹스법을 선택해 필요한 재료를 확인하세요. 득코 불가능한 헨치는 하위 믹스를 따라가며, 하위 조합이 없으면 해당 헨치를 직접 표시합니다.</p>
           </div>
         ) : (
           <div className="grid items-start gap-6 lg:grid-cols-2">
@@ -307,7 +307,7 @@ export default function MaterialCalculator() {
                     <Calculator className="h-5 w-5 text-cyan-400" />
                     <h2 className="text-xl font-bold text-cyan-300">재료계산기</h2>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">만들 마리수를 기준으로 실제 필요한 재료를 계산합니다.</p>
+                  <p className="mt-1 text-xs text-slate-500">체크박스로 확보한 재료를 표시할 수 있습니다. 득코 불가능한 헨치는 하위 재료를 계산합니다.</p>
                 </div>
                 <button
                   type="button"
@@ -349,7 +349,7 @@ export default function MaterialCalculator() {
               </div>
 
               <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-cyan-300">140~169 레벨 재료</h3>
+                <h3 className="text-lg font-bold text-cyan-300">필요 재료 목록</h3>
                 <span className="rounded-full border border-cyan-500/20 px-2.5 py-1 text-xs text-slate-400">
                   총 {totalMaterials}마리
                 </span>
@@ -451,8 +451,8 @@ export default function MaterialCalculator() {
               ) : (
                 <div className="rounded-xl border border-dashed border-slate-700 py-14 text-center">
                   <Calculator className="mx-auto mb-3 h-9 w-9 text-slate-600" />
-                  <p className="text-sm text-slate-400">140~169 레벨 재료가 없습니다.</p>
-                  <p className="mt-1 text-xs text-slate-600">왼쪽에서 조합법을 선택하거나 다른 헨치를 검색해 보세요.</p>
+                  <p className="text-sm text-slate-400">표시할 재료가 없습니다.</p>
+                  <p className="mt-1 text-xs text-slate-600">조합법을 선택하거나 다른 헨치를 검색해 보세요.</p>
                 </div>
               )}
             </section>

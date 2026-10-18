@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   calculateMaterialCounts,
+  collectRecipeChoices,
   getRecipeOptions,
   normalizeRecipeName,
 } from "./materialCalculator";
@@ -31,7 +32,7 @@ describe("material calculator recipes", () => {
     ]);
   });
 
-  it("counts only 140~169 materials for the selected recipe", () => {
+  it("counts obtainable 140~169 materials for the selected recipe", () => {
     expect(calculateMaterialCounts(monsters, monsters[0])).toEqual({
       레벨150재료: 1,
       레벨160재료: 1,
@@ -82,4 +83,61 @@ describe("material calculator recipes", () => {
       레벨161재료: 1,
     });
   });
+
+  it("expands an unobtainable 140~169 material into its sub-mix ingredients", () => {
+    const source = [
+      { id: "target", name: "최종헨치", baseLevel: 220, main: "득코불가헨치 [1]", sub: "일반재료 [1]" },
+      { id: "blocked", name: "득코불가헨치", baseLevel: 150, acquired: "x", main: "하위재료A [1]", sub: "하위재료B [1]" },
+      { id: "a", name: "하위재료A", baseLevel: 95, acquired: "0", main: "-", sub: "-" },
+      { id: "b", name: "하위재료B", baseLevel: 100, acquired: "0", main: "-", sub: "-" },
+      { id: "ordinary", name: "일반재료", baseLevel: 160, acquired: "0", main: "-", sub: "-" },
+    ];
+
+    expect(calculateMaterialCounts(source, source[0])).toEqual({
+      하위재료A: 1,
+      하위재료B: 1,
+      일반재료: 1,
+    });
+  });
+
+  it("shows a monster without a sub-mix as a checkable material, regardless of level", () => {
+    const source = [
+      { id: "target", name: "최종헨치", baseLevel: 220, main: "네펠레맨 [1]", sub: "레벨150재료 [1]" },
+      { id: "nephele", name: "네펠레맨", baseLevel: 95, acquired: "0", main: "-", sub: "-" },
+      { id: "level150", name: "레벨150재료", baseLevel: 150, acquired: "0", main: "-", sub: "-" },
+    ];
+
+    expect(calculateMaterialCounts(source, source[0])).toEqual({
+      네펠레맨: 1,
+      레벨150재료: 1,
+    });
+  });
+
+  it("shows the selected monster itself when no recipe exists", () => {
+    const source = [
+      { id: "nephele", name: "네펠레맨", baseLevel: 95, acquired: "0", main: "-", sub: "-" },
+    ];
+
+    expect(calculateMaterialCounts(source, source[0], 3)).toEqual({ 네펠레맨: 3 });
+  });
+
+  it("can offer recipe choices for an unobtainable final-level ingredient", () => {
+    const source = [
+      { id: "target", name: "최종헨치", baseLevel: 220, main: "득코불가헨치 [1]", sub: "재료150 [1]" },
+      { id: "blocked", name: "득코불가헨치", baseLevel: 150, acquired: "x", main: "하위A [1]", sub: "하위B [1]", main2: "하위C [1]", sub2: "하위D [1]" },
+      { id: "m150", name: "재료150", baseLevel: 150, acquired: "0", main: "-", sub: "-" },
+      { id: "a", name: "하위A", baseLevel: 90, main: "-", sub: "-" },
+      { id: "b", name: "하위B", baseLevel: 90, main: "-", sub: "-" },
+      { id: "c", name: "하위C", baseLevel: 90, main: "-", sub: "-" },
+      { id: "d", name: "하위D", baseLevel: 90, main: "-", sub: "-" },
+    ];
+
+    expect(collectRecipeChoices(source, source[0]).map((monster) => monster.name)).toContain("득코불가헨치");
+    expect(calculateMaterialCounts(source, source[0], 1, { blocked: 1 })).toEqual({
+      하위C: 1,
+      하위D: 1,
+      재료150: 1,
+    });
+  });
+
 });

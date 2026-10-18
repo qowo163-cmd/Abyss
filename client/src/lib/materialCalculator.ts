@@ -6,6 +6,7 @@ export interface MaterialRecipeMonster {
   sub?: string | null;
   main2?: string | null;
   sub2?: string | null;
+  acquired?: '0' | 'x' | string;
 }
 
 export interface MaterialRecipeOption {
@@ -80,7 +81,7 @@ function recipeIngredients(monster: MaterialRecipeMonster, selections?: RecipeSe
 
 /**
  * 현재 선택된 조합 경로에서 조합법을 골라야 하는 모든 헨치를 반환한다.
- * 140~169 레벨 재료는 최종 재료이므로 더 펼치지 않는다.
+ * 득코 가능한 140~169레벨 재료는 최종 재료이며, 득코 불가능한 재료는 하위 조합 선택을 허용한다.
  */
 export function collectRecipeChoices(
   monsters: MaterialRecipeMonster[],
@@ -95,9 +96,9 @@ export function collectRecipeChoices(
     if (ancestry.has(key) || visited.has(key)) return;
     visited.add(key);
 
-    // 140~169레벨은 계산의 최종 재료이므로, 조합법이 여러 개여도
-    // 그 재료의 하위 조합을 사용자에게 선택하게 하지 않는다.
-    if (isTargetLevel(monster)) return;
+    // 140~169레벨이라도 득코 불가능(acquired === 'x')하면 하위 믹스를 따라간다.
+    // 득코 가능한 해당 레벨 재료만 최종 재료로 보고 더 펼치지 않는다.
+    if (isTargetLevel(monster) && monster.acquired !== 'x') return;
 
     const options = getRecipeOptions(monster);
     if (options.length > 1) choices.push(monster);
@@ -115,16 +116,17 @@ export function collectRecipeChoices(
 }
 
 /**
- * 선택한 헨치를 만들기 위해 필요한 140~169 레벨의 최종 재료를 재귀적으로 집계한다.
+ * 선택한 헨치를 만들기 위해 필요한 재료를 재귀적으로 집계한다.
  *
  * 핵심 규칙:
- * - 140~169: 최종 재료로 집계하고 더 펼치지 않는다.
- * - 140 미만: 조합법을 계속 따라간다.
- * - 170 이상: 중간 제작 헨치일 수 있으므로 조합법을 계속 따라간다.
+ * - 득코 가능한 140~169레벨: 최종 재료로 집계한다.
+ * - 득코 불가능(acquired === 'x')한 헨치: 조합법이 있으면 하위 믹스를 계속 따라간다.
+ * - 레벨과 관계없이 하위 조합법이 없는 헨치: 직접 필요한 재료로 표시한다.
+ * - 170 이상 및 140 미만: 하위 조합법이 있으면 계속 따라간다.
  * - 여러 조합법: recipeSelections에 선택된 조합을 사용한다.
  *
- * 따라서 170레벨 이상인 닌자걸 같은 중간 헨치가 있어도 최종적으로
- * 140~169레벨 재료까지 내려가서 합산한다.
+ * 따라서 170레벨 이상인 중간 헨치도 조합법을 따라가며, 획득 불가능한 재료의
+ * 하위 조합과 하위 믹스가 없는 직접 재료를 체크 목록에 포함한다.
  */
 export function calculateMaterialCounts(
   monsters: MaterialRecipeMonster[],
@@ -143,18 +145,27 @@ export function calculateMaterialCounts(
 
   const walkIngredient = (ingredient: string, amount: number, ancestry: Set<string>) => {
     const material = findMonster(monsters, ingredient);
-    if (!material) return;
+    // 조합 데이터에 이름만 있고 몬스터 데이터가 누락된 재료도 목록에서 빠뜨리지 않는다.
+    if (!material) {
+      add(normalizeRecipeName(ingredient), amount);
+      return;
+    }
 
     const materialKey = material.id || material.name;
     if (ancestry.has(materialKey)) return;
 
-    if (isTargetLevel(material)) {
+    // 득코 가능한 140~169레벨은 그대로 체크할 재료다. 득코 불가능하면 하위 믹스를 펼친다.
+    if (isTargetLevel(material) && material.acquired !== 'x') {
       add(material.name, amount);
       return;
     }
 
     const childIngredients = recipeIngredients(material, recipeSelections);
-    if (childIngredients.length === 0) return;
+    // 네펠레맨처럼 하위 믹스가 없는 헨치는 레벨과 관계없이 직접 재료로 표시한다.
+    if (childIngredients.length === 0) {
+      add(material.name, amount);
+      return;
+    }
 
     const nextAncestry = new Set(ancestry);
     nextAncestry.add(materialKey);
@@ -165,7 +176,11 @@ export function calculateMaterialCounts(
   };
 
   const rootIngredients = recipeIngredients(root, recipeSelections);
-  if (rootIngredients.length === 0) return counts;
+  // 사용자가 선택한 헨치 자체에 조합법이 없으면 직접 필요한 재료로 보여 준다.
+  if (rootIngredients.length === 0) {
+    add(root.name, safeQuantity);
+    return counts;
+  }
 
   const rootKey = root.id || root.name;
   rootIngredients.forEach((ingredient) => walkIngredient(ingredient, safeQuantity, new Set([rootKey])));
