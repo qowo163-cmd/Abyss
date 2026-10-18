@@ -186,11 +186,14 @@ export default function MaterialCalculator() {
 
   const acquiredCount = totalMaterials - remainingCount;
 
-  const toggleMaterialCheck = (name: string) => {
+  // 체크박스는 화면 표시만 바꾸는 토글이 아니라, 구한 재료 상태를 확정한다.
+  // 브라우저가 onChange를 연속 전달하거나 탭 상태가 갱신되는 상황에서도
+  // 이벤트가 전달한 checked 값 그대로 저장해 계산 요약과 행별 남은 수량이 일치하도록 한다.
+  const setMaterialChecked = (name: string, isChecked: boolean) => {
     updateActiveTab((tab) => {
       const updated = new Set(tab.checkedMaterials);
-      if (updated.has(name)) updated.delete(name);
-      else updated.add(name);
+      if (isChecked) updated.add(name);
+      else updated.delete(name);
       return { ...tab, checkedMaterials: Array.from(updated) };
     });
   };
@@ -534,11 +537,25 @@ export default function MaterialCalculator() {
                 </div>
               </div>
 
-              <div className="mb-4 flex items-center justify-between">
-                <h3 className="text-lg font-bold text-cyan-300">필요 재료 목록</h3>
-                <span className="rounded-full border border-cyan-500/20 px-2.5 py-1 text-xs text-slate-400">
-                  총 {totalMaterials}마리
-                </span>
+              <div className="mb-4 flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <h3 className="text-lg font-bold text-cyan-300">필요 재료 목록</h3>
+                  <p className="mt-1 text-xs font-medium text-slate-400">재료를 체크하면 구한 재료로 처리되어 남은 수량에서 제외됩니다.</p>
+                </div>
+                <div className="flex flex-wrap items-center justify-end gap-2">
+                  <span
+                    data-testid="material-calculator-required-total"
+                    className="rounded-full border border-cyan-500/20 px-2.5 py-1 text-xs font-semibold text-slate-300"
+                  >
+                    필요 총 {totalMaterials}마리
+                  </span>
+                  <span
+                    data-testid="material-calculator-remaining-total"
+                    className="rounded-full border border-orange-400/40 bg-orange-950/40 px-2.5 py-1 text-xs font-bold text-orange-200"
+                  >
+                    남은 {remainingCount}마리
+                  </span>
+                </div>
               </div>
 
               {sortedMaterials.length > 0 ? (
@@ -565,10 +582,11 @@ export default function MaterialCalculator() {
                           >
                             <input
                               type="checkbox"
+                              aria-label={`${material.name} 구한 재료 체크`}
                               checked={material.isChecked}
                               disabled={materialMonster?.acquired === 'x' && detailRecipes.length === 0}
                               title={materialMonster?.acquired === 'x' && detailRecipes.length === 0 ? '득코 불가능하며 하위 믹스가 없어 체크할 수 없습니다.' : undefined}
-                              onChange={() => toggleMaterialCheck(material.name)}
+                              onChange={(event) => setMaterialChecked(material.name, event.currentTarget.checked)}
                               className="h-4 w-4 cursor-pointer accent-cyan-400 disabled:cursor-not-allowed disabled:opacity-40"
                             />
                             <button
@@ -579,9 +597,20 @@ export default function MaterialCalculator() {
                             >
                               {material.name}
                             </button>
-                            <span className={`font-bold ${material.isChecked ? 'text-slate-500' : 'text-cyan-300'}`}>
-                              {material.count}마리
-                            </span>
+                            <div className="shrink-0 text-right">
+                              {material.isChecked ? (
+                                <>
+                                  <span className="block text-xs font-medium text-slate-500 line-through">필요 {material.count}마리</span>
+                                  <span className="mt-0.5 block text-sm font-extrabold text-emerald-300">구함 완료</span>
+                                  <span className="block text-xs font-bold text-emerald-200">남은 0마리</span>
+                                </>
+                              ) : (
+                                <>
+                                  <span className="block text-sm font-extrabold text-cyan-300">{material.count}마리 필요</span>
+                                  <span className="mt-0.5 block text-xs font-bold text-orange-200">남은 {material.count}마리</span>
+                                </>
+                              )}
+                            </div>
                           </div>
 
                           {isExpanded && materialMonster && (
@@ -628,11 +657,11 @@ export default function MaterialCalculator() {
                   <div className="mt-4 rounded-xl border border-slate-700 bg-slate-900/20 p-4">
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-slate-400">구한 재료</span>
-                      <span className="font-bold text-cyan-300">{acquiredCount}마리</span>
+                      <span data-testid="material-calculator-acquired-count" className="font-bold text-cyan-300">{acquiredCount}마리</span>
                     </div>
                     <div className="mt-2 flex items-center justify-between text-sm">
                       <span className="text-slate-400">남은 재료</span>
-                      <span className="font-bold text-orange-300">{remainingCount}마리</span>
+                      <span data-testid="material-calculator-remaining-count" className="font-bold text-orange-300">{remainingCount}마리</span>
                     </div>
                   </div>
                 </>

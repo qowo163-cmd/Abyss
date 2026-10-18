@@ -57,6 +57,33 @@ describe("MaterialCalculator multiple recipes and saved tabs", () => {
     });
   });
 
+
+  it("recalculates acquired and remaining amounts when a material checkbox is checked or unchecked", async () => {
+    render(<MaterialCalculator />);
+    fireEvent.change(screen.getByPlaceholderText("만들 헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
+    fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
+
+    const mainCheckbox = screen.getByRole("checkbox", { name: "주재료 구한 재료 체크" });
+    expect(screen.getByTestId("material-calculator-required-total")).toHaveTextContent("필요 총 2마리");
+    expect(screen.getByTestId("material-calculator-remaining-total")).toHaveTextContent("남은 2마리");
+    expect(screen.getByTestId("material-calculator-acquired-count")).toHaveTextContent("0마리");
+    expect(screen.getByTestId("material-calculator-remaining-count")).toHaveTextContent("2마리");
+
+    fireEvent.click(mainCheckbox);
+    expect(mainCheckbox).toBeChecked();
+    expect(screen.getByTestId("material-calculator-remaining-total")).toHaveTextContent("남은 1마리");
+    expect(screen.getByTestId("material-calculator-acquired-count")).toHaveTextContent("1마리");
+    expect(screen.getByTestId("material-calculator-remaining-count")).toHaveTextContent("1마리");
+    expect(screen.getByText("구함 완료")).toBeInTheDocument();
+    expect(screen.getByText("남은 0마리")).toBeInTheDocument();
+
+    fireEvent.click(mainCheckbox);
+    expect(mainCheckbox).not.toBeChecked();
+    expect(screen.getByTestId("material-calculator-remaining-total")).toHaveTextContent("남은 2마리");
+    expect(screen.getByTestId("material-calculator-acquired-count")).toHaveTextContent("0마리");
+    expect(screen.getByTestId("material-calculator-remaining-count")).toHaveTextContent("2마리");
+  });
+
   it("shows a selected monster directly when it has no sub-mix recipe", async () => {
     monsters.push({ id: "leaf", name: "네펠레맨", main: "-", sub: "-", attribute: "짐승", baseLevel: 95, maxLevel: 120, acquired: "0" });
     try {

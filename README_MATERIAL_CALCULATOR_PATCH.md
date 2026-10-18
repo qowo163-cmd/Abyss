@@ -10,9 +10,11 @@
 - 네펠레맨처럼 하위 조합법이 없는 헨치는 직접 재료로 표시하고, 득코 불가능하며 하위 조합도 없는 항목은 체크박스를 비활성화합니다.
 - 조합 데이터가 가리키는 이름이 현재 몬스터 목록에 없더라도 계산 결과에서 누락하지 않고 직접 재료로 표시합니다.
 - 화면의 제목과 안내 문구를 변경한 동작에 맞게 조정했습니다.
+- 재료 체크박스는 이벤트에서 요청된 체크 상태를 명시적으로 저장하며, 체크 시 해당 재료 전체를 구한 것으로 계산합니다. 각 행에 필요 수량·구함 완료·남은 수량을 표시하고, 전체 남은 수량 요약도 즉시 갱신합니다.
 - 최대 7개의 재료계산기 탭을 추가·전환·닫기할 수 있으며, 탭별 목표 헨치·수량·재료 체크·펼친 상세·대체 조합을 자동 저장합니다.
 - 저장 상태는 브라우저 `localStorage`를 사용하므로 같은 브라우저와 사이트 주소에서 페이지를 이동하거나 새로고침해도 복원됩니다.
 - 탭 독립성과 새로고침 후 복원을 확인하는 테스트를 추가했습니다.
+- 체크 후 행별 남은 수량과 전체 획득/남은 수량이 함께 갱신되고, 체크 해제 시 되돌아오는 회귀 테스트를 추가했습니다.
 
 ## 수정된 소스 파일
 
@@ -21,6 +23,7 @@
 - `client/src/lib/materialCalculator.test.ts`
 - `client/src/lib/materialCalculator.actualData.test.ts`
 - `client/src/pages/MaterialCalculator.test.tsx`
+- `client/src/data/updates.json` (사이트 업데이트 기록)
 - `README_MATERIAL_CALCULATOR_PATCH.md`
 - `MATERIAL_CALCULATOR.md`
 - `client/src/data/updates.json` (사이트 업데이트 탭 표시용 기록)
@@ -32,4 +35,4 @@
 
 ## 검증 상태
 
-수정한 TSX/테스트 파일의 TypeScript 구문 변환과 업데이트 JSON의 파싱을 확인했습니다. 실행 환경에 전체 `node_modules`가 없고 패키지 저장소 접속도 실패해 Vitest 전체 실행과 production build/UI 테스트는 이번 세션에서 실행하지 못했습니다. 기존 GitHub 저장소에 반영한 뒤 자동 배포/미리보기에서 탭 추가·전환·닫기, 새로고침 후 상태 복원을 확인하세요.
+수정한 TSX/테스트 파일의 TypeScript 구문 변환, 업데이트 JSON 파싱, 계산 함수 기본 동작 smoke test를 확인했습니다. 실행 환경에 전체 `node_modules`가 없어 Vitest 전체 실행과 production build/UI 테스트는 이번 세션에서 실행하지 못했습니다. 기존 GitHub 저장소에 반영한 뒤 자동 배포/미리보기에서 탭 추가·전환·닫기, 새로고침 후 상태 복원을 확인하세요.
