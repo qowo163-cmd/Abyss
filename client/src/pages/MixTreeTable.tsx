@@ -1,5 +1,5 @@
 import { useDeferredValue, useEffect, useMemo, useState } from "react";
-import { GitBranch, Search, X, ChevronDown, Layers3 } from "lucide-react";
+import { GitBranch, Search, X, ChevronDown, Layers3, Plus } from "lucide-react";
 import type { Monster } from "@/types/monster";
 import { Input } from "@/components/ui/input";
 import { useMonsterData } from "@/hooks/useMonsterData";
@@ -20,21 +20,82 @@ type RecipeGridNode = {
 type PositionedCell = { node: RecipeGridNode; rowSpan: number };
 type RecipeMatrix = Array<Map<number, PositionedCell>>;
 
-const STORAGE_KEY = "abyss-mix-tree-table-state-v1";
+const STORAGE_KEY = "abyss-mix-tree-table-tabs-v1";
+const LEGACY_STORAGE_KEY = "abyss-mix-tree-table-state-v1";
 const DEFAULT_TARGET = "데미헬파드";
 const DEFAULT_DEPTH = 4;
 const MAX_DEPTH = 5;
+const MIN_DEPTH = 2;
+const MAX_TABS = 7;
 
-type SavedState = { targetName?: string; mainName?: string; subName?: string; maxDepth?: number };
+type MixTreeTabState = {
+  id: string;
+  targetName: string;
+  maxDepth: number;
+  legacyMainName?: string;
+  legacySubName?: string;
+};
+type SavedTabsState = { tabs: MixTreeTabState[]; activeTabId: string };
+type LegacySavedState = { targetName?: string; mainName?: string; subName?: string; maxDepth?: number };
 
-function readSavedState(): SavedState {
-  if (typeof window === "undefined") return {};
+function createMixTreeTab(targetName = "", maxDepth = DEFAULT_DEPTH): MixTreeTabState {
+  return {
+    id: `mix-tree-tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    targetName,
+    maxDepth: Math.max(MIN_DEPTH, Math.min(MAX_DEPTH, Math.floor(maxDepth))),
+  };
+}
+
+function clampDepth(value: unknown): number {
+  const numeric = Number(value ?? DEFAULT_DEPTH);
+  return Number.isFinite(numeric) ? Math.max(MIN_DEPTH, Math.min(MAX_DEPTH, Math.floor(numeric))) : DEFAULT_DEPTH;
+}
+
+function readSavedTabsState(): SavedTabsState {
+  const firstTab = createMixTreeTab(DEFAULT_TARGET);
+  if (typeof window === "undefined") return { tabs: [firstTab], activeTabId: firstTab.id };
+
   try {
-    const raw = localStorage.getItem(STORAGE_KEY);
-    return raw ? JSON.parse(raw) as SavedState : {};
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (raw) {
+      const parsed = JSON.parse(raw) as Partial<SavedTabsState>;
+      if (Array.isArray(parsed.tabs) && parsed.tabs.length > 0) {
+        const tabs = parsed.tabs.slice(0, MAX_TABS).map((candidate): MixTreeTabState => {
+          const tab = candidate as Partial<MixTreeTabState>;
+          return {
+            id: typeof tab.id === "string" && tab.id ? tab.id : createMixTreeTab().id,
+            targetName: typeof tab.targetName === "string" ? tab.targetName : "",
+            maxDepth: clampDepth(tab.maxDepth),
+            legacyMainName: typeof tab.legacyMainName === "string" ? tab.legacyMainName : undefined,
+            legacySubName: typeof tab.legacySubName === "string" ? tab.legacySubName : undefined,
+          };
+        });
+        const activeTabId = tabs.some((tab) => tab.id === parsed.activeTabId) ? String(parsed.activeTabId) : tabs[0].id;
+        return { tabs, activeTabId };
+      }
+    }
   } catch {
-    return {};
+    // If the newer format is invalid, try migrating the older single-view setting below.
   }
+
+  try {
+    const legacyRaw = window.localStorage.getItem(LEGACY_STORAGE_KEY);
+    if (legacyRaw) {
+      const legacy = JSON.parse(legacyRaw) as LegacySavedState;
+      const hasLegacyRecipe = Boolean(legacy.mainName && legacy.subName);
+      const tab = createMixTreeTab(
+        typeof legacy.targetName === "string" ? legacy.targetName : hasLegacyRecipe ? "" : DEFAULT_TARGET,
+        clampDepth(legacy.maxDepth),
+      );
+      tab.legacyMainName = typeof legacy.mainName === "string" ? legacy.mainName : undefined;
+      tab.legacySubName = typeof legacy.subName === "string" ? legacy.subName : undefined;
+      return { tabs: [tab], activeTabId: tab.id };
+    }
+  } catch {
+    // Start with a clean default if legacy browser state cannot be read.
+  }
+
+  return { tabs: [firstTab], activeTabId: firstTab.id };
 }
 
 function buildRecipeTree(
@@ -312,34 +373,95 @@ function RecipeTreeTable({
 
 export default function MixTreeTable() {
   const monsters = useMonsterData();
-  const [initialState] = useState(readSavedState);
-  const [targetName, setTargetName] = useState(() => {
-    if (initialState.targetName) return initialState.targetName;
-    // 이전 버전의 저장 상태는 메인/서브 재료 이름만 갖고 있으므로 해당 조합의 결과 헨치를 찾아 이전합니다.
-    if (initialState.mainName && initialState.subName) {
-      const legacyTarget = monsters.find((monster) =>
-        normalizeRecipeName(monster.main || "") === initialState.mainName
-        && normalizeRecipeName(monster.sub || "") === initialState.subName,
-      );
-      if (legacyTarget) return legacyTarget.name;
+  const [savedState, setSavedState] = useState<SavedTabsState>(readSavedTabsState);
+  const tabs = savedState.tabs;
+  const activeTab = useMemo(
+    () => tabs.find((tab) => tab.id === savedState.activeTabId) ?? tabs[0],
+    [tabs, savedState.activeTabId],
+  );
+  const targetName = activeTab?.targetName ?? DEFAULT_TARGET;
+  const maxDepth = activeTab?.maxDepth ?? DEFAULT_DEPTH;
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(savedState));
+    } catch {
+      // Keep the current page usable even when local storage is unavailable.
     }
-    return DEFAULT_TARGET;
-  });
-  const initialDepth = Number(initialState.maxDepth ?? DEFAULT_DEPTH);
-  const [maxDepth, setMaxDepth] = useState(Number.isFinite(initialDepth) ? Math.max(2, Math.min(MAX_DEPTH, initialDepth)) : DEFAULT_DEPTH);
+  }, [savedState]);
+
+  // Migrate a prior version which saved only the main/sub ingredient names.
+  useEffect(() => {
+    if (!monsters.length) return;
+    setSavedState((current) => {
+      let changed = false;
+      const nextTabs = current.tabs.map((tab) => {
+        if (tab.targetName || !tab.legacyMainName || !tab.legacySubName) return tab;
+        const legacyTarget = monsters.find((monster) =>
+          normalizeRecipeName(monster.main || "") === tab.legacyMainName
+          && normalizeRecipeName(monster.sub || "") === tab.legacySubName,
+        );
+        if (!legacyTarget) return tab;
+        changed = true;
+        return {
+          ...tab,
+          targetName: legacyTarget.name,
+          legacyMainName: undefined,
+          legacySubName: undefined,
+        };
+      });
+      return changed ? { ...current, tabs: nextTabs } : current;
+    });
+  }, [monsters]);
+
+  const updateActiveTab = (updater: (tab: MixTreeTabState) => MixTreeTabState) => {
+    setSavedState((current) => ({
+      ...current,
+      tabs: current.tabs.map((tab) => tab.id === current.activeTabId ? updater(tab) : tab),
+    }));
+  };
+
+  const setTargetName = (nextName: string) => updateActiveTab((tab) => ({
+    ...tab,
+    targetName: nextName,
+    legacyMainName: undefined,
+    legacySubName: undefined,
+  }));
+
+  const setMaxDepth = (nextDepth: number) => updateActiveTab((tab) => ({
+    ...tab,
+    maxDepth: clampDepth(nextDepth),
+  }));
+
+  const switchTab = (tabId: string) => {
+    setSavedState((current) => current.tabs.some((tab) => tab.id === tabId)
+      ? { ...current, activeTabId: tabId }
+      : current);
+  };
+
+  const addTab = () => {
+    setSavedState((current) => {
+      if (current.tabs.length >= MAX_TABS) return current;
+      const tab = createMixTreeTab("");
+      return { tabs: [...current.tabs, tab], activeTabId: tab.id };
+    });
+  };
+
+  const closeTab = (tabId: string) => {
+    setSavedState((current) => {
+      if (current.tabs.length <= 1) return current;
+      const nextTabs = current.tabs.filter((tab) => tab.id !== tabId);
+      if (nextTabs.length === current.tabs.length) return current;
+      if (current.activeTabId !== tabId) return { ...current, tabs: nextTabs };
+      const oldIndex = current.tabs.findIndex((tab) => tab.id === tabId);
+      const nextActive = nextTabs[Math.max(0, oldIndex - 1)] ?? nextTabs[0];
+      return { tabs: nextTabs, activeTabId: nextActive.id };
+    });
+  };
 
   const targetMonster = useMemo(() => monsters.find((monster) => monster.name === targetName) ?? null, [monsters, targetName]);
   const mainReference = targetMonster?.main;
   const subReference = targetMonster?.sub;
-
-  useEffect(() => {
-    if (initialState.targetName || !initialState.mainName || !initialState.subName || !monsters.length) return;
-    const legacyTarget = monsters.find((monster) =>
-      normalizeRecipeName(monster.main || "") === initialState.mainName
-      && normalizeRecipeName(monster.sub || "") === initialState.subName,
-    );
-    if (legacyTarget) setTargetName((current) => current === DEFAULT_TARGET ? legacyTarget.name : current);
-  }, [initialState, monsters]);
 
   const mainTree = useMemo(
     () => buildIngredientTree(mainReference, monsters, maxDepth, "main-root"),
@@ -352,19 +474,6 @@ export default function MixTreeTable() {
   const mainMonster = useMemo(() => isRecipeIngredient(mainReference) ? resolveRecipeMonster(monsters, mainReference) ?? null : null, [mainReference, monsters]);
   const subMonster = useMemo(() => isRecipeIngredient(subReference) ? resolveRecipeMonster(monsters, subReference) ?? null : null, [subReference, monsters]);
 
-  useEffect(() => {
-    try {
-      localStorage.setItem(STORAGE_KEY, JSON.stringify({
-        targetName,
-        mainName: mainMonster?.name ?? (isRecipeIngredient(mainReference) ? normalizeRecipeName(mainReference) : ""),
-        subName: subMonster?.name ?? (isRecipeIngredient(subReference) ? normalizeRecipeName(subReference) : ""),
-        maxDepth,
-      }));
-    } catch {
-      // If local storage is unavailable, keep the current page usable.
-    }
-  }, [targetName, mainMonster, subMonster, mainReference, subReference, maxDepth]);
-
   return (
     <div className="flex min-h-full min-w-0 flex-col overflow-x-hidden bg-[#eaf7ff] text-slate-950">
       <header className="flex-shrink-0 border-b border-sky-200 bg-gradient-to-r from-sky-100 to-cyan-50 px-4 py-4 sm:px-6">
@@ -372,8 +481,52 @@ export default function MixTreeTable() {
           <GitBranch className="h-6 w-6 text-sky-700" />
           <h1 className="text-xl font-black text-sky-900 sm:text-2xl">믹스법v2</h1>
         </div>
-        <p className="mt-1 text-sm text-sky-800">기존 믹스법처럼 헨치 하나를 검색하면 해당 헨치의 메인·서브 재료 계보를 좌우 표로 확인합니다.</p>
+        <p className="mt-1 text-sm text-sky-800">계산 탭을 여러 개 열어 각 헨치의 메인·서브 계보를 따로 확인할 수 있습니다. 탭과 선택 내용은 자동 저장됩니다.</p>
       </header>
+
+      <div role="tablist" aria-label="믹스법v2 탭" className="flex flex-nowrap items-end gap-1 overflow-x-auto border-b border-sky-300 bg-sky-50/90 px-2 pt-2">
+        {tabs.map((tab, index) => {
+          const label = tab.targetName || `탭 ${index + 1}`;
+          const selected = tab.id === activeTab?.id;
+          return (
+            <div key={tab.id} role="presentation" className={`group flex max-w-[14rem] flex-shrink-0 items-center gap-1 rounded-t-lg border border-b-0 px-2 py-2 text-sm transition-colors sm:px-3 ${selected ? "border-sky-400 bg-white text-sky-900" : "border-transparent text-slate-600 hover:bg-white/70"}`}>
+              <button
+                type="button"
+                role="tab"
+                aria-selected={selected}
+                onClick={() => switchTab(tab.id)}
+                className="min-w-0 max-w-[10rem] truncate text-left font-bold"
+                title={label}
+              >
+                {label}
+              </button>
+              {tabs.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => closeTab(tab.id)}
+                  aria-label={`${label} 닫기`}
+                  title={`${label} 닫기`}
+                  className="flex-shrink-0 rounded p-0.5 text-slate-400 transition-colors hover:bg-rose-100 hover:text-rose-700"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          );
+        })}
+        {tabs.length < MAX_TABS && (
+          <button
+            type="button"
+            onClick={addTab}
+            aria-label="믹스법v2 탭 추가"
+            title="새 믹스법v2 탭 추가"
+            className="mb-0.5 flex-shrink-0 rounded-lg p-1.5 text-sky-700 transition-colors hover:bg-sky-100 hover:text-sky-950"
+          >
+            <Plus className="h-4 w-4" />
+          </button>
+        )}
+        <span className="ml-auto flex-shrink-0 self-center pb-1 pl-2 text-xs text-slate-500">자동 저장 · {tabs.length}/{MAX_TABS}</span>
+      </div>
 
       <section className="grid min-w-0 flex-shrink-0 grid-cols-1 gap-3 border-b border-sky-200 bg-white/60 p-3 sm:p-5 lg:grid-cols-[minmax(0,1fr)_180px]">
         <TargetMonsterPicker selectedMonster={targetMonster} monsters={monsters} onSelect={setTargetName} />

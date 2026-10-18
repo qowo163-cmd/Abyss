@@ -62,4 +62,53 @@ describe("MixTreeTable", () => {
     const depthSelect = screen.getByRole("combobox", { name: "표시 단계" });
     expect(depthSelect).toHaveValue("4");
   });
+
+  it("opens independent tabs and keeps a different target and depth in each tab", () => {
+    render(<MixTreeTable />);
+
+    fireEvent.change(screen.getByRole("combobox", { name: "표시 단계" }), { target: { value: "3" } });
+    fireEvent.click(screen.getByRole("button", { name: "믹스법v2 탭 추가" }));
+
+    expect(screen.getByRole("tab", { name: "탭 2" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.change(screen.getByRole("textbox", { name: "헨치 검색" }), { target: { value: "테스트목표" } });
+    fireEvent.click(screen.getByRole("button", { name: /테스트목표/ }));
+    fireEvent.change(screen.getByRole("combobox", { name: "표시 단계" }), { target: { value: "2" } });
+
+    expect(screen.getByRole("tab", { name: "테스트목표" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("mix-tree2-main-table")).toHaveTextContent("요르문");
+    expect(screen.getByRole("combobox", { name: "표시 단계" })).toHaveValue("2");
+
+    fireEvent.click(screen.getByRole("tab", { name: "데미헬파드" }));
+    expect(screen.getByTestId("mix-tree2-main-table")).toHaveTextContent("뉴큐티캣");
+    expect(screen.getByRole("combobox", { name: "표시 단계" })).toHaveValue("3");
+  });
+
+  it("persists multiple tabs and the active selection after the page is remounted", () => {
+    const firstRender = render(<MixTreeTable />);
+    fireEvent.click(screen.getByRole("button", { name: "믹스법v2 탭 추가" }));
+    fireEvent.change(screen.getByRole("textbox", { name: "헨치 검색" }), { target: { value: "테스트목표" } });
+    fireEvent.click(screen.getByRole("button", { name: /테스트목표/ }));
+    fireEvent.change(screen.getByRole("combobox", { name: "표시 단계" }), { target: { value: "2" } });
+
+    const stored = JSON.parse(localStorage.getItem("abyss-mix-tree-table-tabs-v1") || "{}");
+    expect(stored.tabs).toHaveLength(2);
+    expect(stored.tabs[1].targetName).toBe("테스트목표");
+    expect(stored.tabs[1].maxDepth).toBe(2);
+
+    firstRender.unmount();
+    render(<MixTreeTable />);
+    expect(screen.getByRole("tab", { name: "데미헬파드" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "테스트목표" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByTestId("mix-tree2-target-card")).toHaveTextContent("테스트목표");
+    expect(screen.getByRole("combobox", { name: "표시 단계" })).toHaveValue("2");
+  });
+
+  it("can close one tab without losing the other tab", () => {
+    render(<MixTreeTable />);
+    fireEvent.click(screen.getByRole("button", { name: "믹스법v2 탭 추가" }));
+    expect(screen.getByRole("tab", { name: "탭 2" })).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "탭 2 닫기" }));
+    expect(screen.queryByRole("tab", { name: "탭 2" })).not.toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "데미헬파드" })).toHaveAttribute("aria-selected", "true");
+  });
 });
