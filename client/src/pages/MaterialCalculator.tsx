@@ -1,7 +1,7 @@
-import { useState, useMemo, useDeferredValue } from 'react';
+import { useState, useMemo, useDeferredValue, useEffect, useCallback } from 'react';
 import { Input } from '@/components/ui/input';
 import { attributeImages } from '@/data/attributeImages';
-import { Calculator, Search, GitBranch, RotateCcw } from 'lucide-react';
+import { Calculator, Search, GitBranch, RotateCcw, Plus, X } from 'lucide-react';
 import { useMonsterData } from '@/hooks/useMonsterData';
 import { monsterTypeBadgeClass, resolveMonsterType } from '@/lib/monsterType';
 import {
@@ -29,17 +29,116 @@ interface Monster {
 
 const compactName = (value: string) => value.replace(/\s+/g, '');
 
+interface MaterialCalculatorTab {
+  id: string;
+  selectedMonster: Monster | null;
+  quantity: number;
+  checkedMaterials: string[];
+  expandedMaterial: string | null;
+  recipeSelections: RecipeSelections;
+}
+
+interface MaterialCalculatorSavedState {
+  tabs: MaterialCalculatorTab[];
+  activeTabId: string;
+}
+
+const MATERIAL_CALCULATOR_STORAGE_KEY = 'abyss-material-calculator-tabs-v1';
+const MAX_MATERIAL_CALCULATOR_TABS = 7;
+
+function createMaterialCalculatorTab(): MaterialCalculatorTab {
+  return {
+    id: `material-tab-${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
+    selectedMonster: null,
+    quantity: 1,
+    checkedMaterials: [],
+    expandedMaterial: null,
+    recipeSelections: {},
+  };
+}
+
+function readMaterialCalculatorState(): MaterialCalculatorSavedState {
+  const firstTab = createMaterialCalculatorTab();
+  if (typeof window === 'undefined') return { tabs: [firstTab], activeTabId: firstTab.id };
+
+  try {
+    const raw = window.localStorage.getItem(MATERIAL_CALCULATOR_STORAGE_KEY);
+    if (!raw) return { tabs: [firstTab], activeTabId: firstTab.id };
+    const parsed = JSON.parse(raw) as Partial<MaterialCalculatorSavedState>;
+    if (!Array.isArray(parsed.tabs) || parsed.tabs.length === 0) {
+      return { tabs: [firstTab], activeTabId: firstTab.id };
+    }
+
+    const tabs = parsed.tabs.slice(0, MAX_MATERIAL_CALCULATOR_TABS).map((candidate): MaterialCalculatorTab => {
+      const tab = candidate as Partial<MaterialCalculatorTab>;
+      const selectedMonster = tab.selectedMonster && typeof tab.selectedMonster === 'object'
+        && typeof tab.selectedMonster.id === 'string'
+        && typeof tab.selectedMonster.name === 'string'
+        ? tab.selectedMonster as Monster
+        : null;
+      const recipeSelections = tab.recipeSelections && typeof tab.recipeSelections === 'object'
+        ? Object.fromEntries(Object.entries(tab.recipeSelections).filter(([, value]) => Number.isInteger(value) && Number(value) >= 0)) as RecipeSelections
+        : {};
+      return {
+        id: typeof tab.id === 'string' && tab.id ? tab.id : createMaterialCalculatorTab().id,
+        selectedMonster,
+        quantity: Number.isFinite(Number(tab.quantity)) ? Math.max(1, Math.floor(Number(tab.quantity))) : 1,
+        checkedMaterials: Array.isArray(tab.checkedMaterials) ? tab.checkedMaterials.filter((name): name is string => typeof name === 'string') : [],
+        expandedMaterial: typeof tab.expandedMaterial === 'string' ? tab.expandedMaterial : null,
+        recipeSelections,
+      };
+    });
+    const activeTabId = tabs.some((tab) => tab.id === parsed.activeTabId) ? String(parsed.activeTabId) : tabs[0].id;
+    return { tabs: tabs.length ? tabs : [firstTab], activeTabId: tabs.length ? activeTabId : firstTab.id };
+  } catch {
+    return { tabs: [firstTab], activeTabId: firstTab.id };
+  }
+}
+
 export default function MaterialCalculator() {
   const monsters = useMonsterData() as Monster[];
 
   const [searchQuery, setSearchQuery] = useState('');
   const deferredSearchQuery = useDeferredValue(searchQuery);
   const [showDropdown, setShowDropdown] = useState(false);
-  const [selectedMonster, setSelectedMonster] = useState<Monster | null>(null);
-  const [quantity, setQuantity] = useState(1);
-  const [checkedMaterials, setCheckedMaterials] = useState<Set<string>>(new Set());
-  const [expandedMaterial, setExpandedMaterial] = useState<string | null>(null);
-  const [recipeSelections, setRecipeSelections] = useState<RecipeSelections>({});
+  const [savedState, setSavedState] = useState<MaterialCalculatorSavedState>(readMaterialCalculatorState);
+  const tabs = savedState.tabs;
+  const activeTabId = savedState.activeTabId;
+  const activeTab = useMemo(() => tabs.find((tab) => tab.id === activeTabId) ?? tabs[0], [tabs, activeTabId]);
+  const selectedMonster = activeTab?.selectedMonster ?? null;
+  const quantity = activeTab?.quantity ?? 1;
+  const checkedMaterials = useMemo(() => new Set(activeTab?.checkedMaterials ?? []), [activeTab?.checkedMaterials]);
+  const expandedMaterial = activeTab?.expandedMaterial ?? null;
+  const recipeSelections = activeTab?.recipeSelections ?? {};
+
+  useEffect(() => {
+    try {
+      window.localStorage.setItem(MATERIAL_CALCULATOR_STORAGE_KEY, JSON.stringify(savedState));
+    } catch {
+      // 저장 공간이 꽉 찼거나 브라우저 설정에서 저장이 막힌 경우에도 계산기는 계속 작동합니다.
+    }
+  }, [savedState]);
+
+  const updateActiveTab = useCallback((updater: (tab: MaterialCalculatorTab) => MaterialCalculatorTab) => {
+    setSavedState((current) => ({
+      ...current,
+      tabs: current.tabs.map((tab) => tab.id === current.activeTabId ? updater(tab) : tab),
+    }));
+  }, []);
+
+  const setQuantity = (update: number | ((current: number) => number)) => {
+    updateActiveTab((tab) => ({
+      ...tab,
+      quantity: Math.max(1, Math.floor(typeof update === 'function' ? update(tab.quantity) : update)),
+    }));
+  };
+
+  const setExpandedMaterial = (update: string | null | ((current: string | null) => string | null)) => {
+    updateActiveTab((tab) => ({
+      ...tab,
+      expandedMaterial: typeof update === 'function' ? update(tab.expandedMaterial) : update,
+    }));
+  };
 
   const searchResults = useMemo(() => {
     if (!deferredSearchQuery.trim()) return [];
@@ -88,33 +187,76 @@ export default function MaterialCalculator() {
   const acquiredCount = totalMaterials - remainingCount;
 
   const toggleMaterialCheck = (name: string) => {
-    const updated = new Set(checkedMaterials);
-    if (updated.has(name)) updated.delete(name);
-    else updated.add(name);
-    setCheckedMaterials(updated);
+    updateActiveTab((tab) => {
+      const updated = new Set(tab.checkedMaterials);
+      if (updated.has(name)) updated.delete(name);
+      else updated.add(name);
+      return { ...tab, checkedMaterials: Array.from(updated) };
+    });
   };
 
   const setRecipeSelection = (monster: Monster, optionIndex: number) => {
-    setRecipeSelections((current) => ({ ...current, [monster.id]: optionIndex }));
-    setCheckedMaterials(new Set());
-    setExpandedMaterial(null);
+    updateActiveTab((tab) => ({
+      ...tab,
+      recipeSelections: { ...tab.recipeSelections, [monster.id]: optionIndex },
+      checkedMaterials: [],
+      expandedMaterial: null,
+    }));
   };
 
   const selectMonster = (monster: Monster) => {
-    setSelectedMonster(monster);
+    updateActiveTab((tab) => ({
+      ...tab,
+      selectedMonster: monster,
+      checkedMaterials: [],
+      expandedMaterial: null,
+      recipeSelections: {},
+    }));
     setShowDropdown(false);
     setSearchQuery('');
-    setCheckedMaterials(new Set());
-    setExpandedMaterial(null);
-    setRecipeSelections({});
   };
 
   const handleReset = () => {
+    updateActiveTab((tab) => ({
+      ...tab,
+      selectedMonster: null,
+      quantity: 1,
+      checkedMaterials: [],
+      expandedMaterial: null,
+      recipeSelections: {},
+    }));
     setSearchQuery('');
-    setSelectedMonster(null);
-    setQuantity(1);
-    setCheckedMaterials(new Set());
-    setRecipeSelections({});
+    setShowDropdown(false);
+  };
+
+  const switchTab = (tabId: string) => {
+    setSavedState((current) => ({ ...current, activeTabId: tabId }));
+    setSearchQuery('');
+    setShowDropdown(false);
+  };
+
+  const addTab = () => {
+    setSavedState((current) => {
+      if (current.tabs.length >= MAX_MATERIAL_CALCULATOR_TABS) return current;
+      const newTab = createMaterialCalculatorTab();
+      return { tabs: [...current.tabs, newTab], activeTabId: newTab.id };
+    });
+    setSearchQuery('');
+    setShowDropdown(false);
+  };
+
+  const closeTab = (tabId: string) => {
+    setSavedState((current) => {
+      if (current.tabs.length <= 1) return current;
+      const remaining = current.tabs.filter((tab) => tab.id !== tabId);
+      if (remaining.length === current.tabs.length) return current;
+      const nextActiveTabId = current.activeTabId === tabId
+        ? remaining[Math.max(0, current.tabs.findIndex((tab) => tab.id === tabId) - 1)]?.id ?? remaining[0].id
+        : current.activeTabId;
+      return { tabs: remaining, activeTabId: nextActiveTabId };
+    });
+    setSearchQuery('');
+    setShowDropdown(false);
   };
 
   const renderRecipeChoice = (monster: Monster, nested = false) => {
@@ -179,6 +321,50 @@ export default function MaterialCalculator() {
             <h1 className="text-3xl font-bold text-cyan-300">재료 계산기</h1>
             <p className="mt-1 text-xs text-slate-500">173레벨 이하의 득코 가능 헨치는 최상위 단계에서 체크하고, 174레벨 이상은 하위 믹스를 따라갑니다.</p>
           </div>
+        </div>
+
+        {/* 여러 계산 내용을 각각 보관하는 탭 */}
+        <div role="tablist" aria-label="재료계산기 탭" className="mb-4 flex flex-nowrap items-end gap-1 overflow-x-auto border-b border-cyan-500/20 bg-slate-900/50 px-2 pt-2">
+          {tabs.map((tab, index) => (
+            <div
+              key={tab.id}
+              role="presentation"
+              className={`group flex max-w-[12rem] flex-shrink-0 items-center gap-1.5 rounded-t-lg border border-b-0 px-3 py-2 text-sm transition-colors ${tab.id === activeTabId ? 'border-cyan-400/60 bg-slate-800 text-cyan-200' : 'border-transparent text-slate-400 hover:bg-slate-800/40'}`}
+            >
+              <button
+                type="button"
+                role="tab"
+                aria-selected={tab.id === activeTabId}
+                onClick={() => switchTab(tab.id)}
+                className="min-w-0 max-w-[9rem] truncate text-left font-medium"
+                title={tab.selectedMonster?.name || `탭 ${index + 1}`}
+              >
+                {tab.selectedMonster?.name || `탭 ${index + 1}`}
+              </button>
+              {tabs.length > 1 && (
+                <button
+                  type="button"
+                  onClick={() => closeTab(tab.id)}
+                  aria-label={`${tab.selectedMonster?.name || `탭 ${index + 1}`} 닫기`}
+                  className="flex-shrink-0 rounded p-0.5 text-slate-500 transition-colors hover:bg-slate-700 hover:text-slate-100"
+                >
+                  <X className="h-3.5 w-3.5" />
+                </button>
+              )}
+            </div>
+          ))}
+          {tabs.length < MAX_MATERIAL_CALCULATOR_TABS && (
+            <button
+              type="button"
+              onClick={addTab}
+              aria-label="재료계산기 탭 추가"
+              title="새 계산 탭 추가"
+              className="mb-0.5 flex-shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-cyan-300"
+            >
+              <Plus className="h-4 w-4" />
+            </button>
+          )}
+          <span className="ml-auto flex-shrink-0 self-center pb-1 pl-2 text-xs text-slate-500">자동 저장 · {tabs.length} / {MAX_MATERIAL_CALCULATOR_TABS}</span>
         </div>
 
         {/* 헨치 검색 */}
@@ -334,7 +520,7 @@ export default function MaterialCalculator() {
                     >
                       −
                     </button>
-                    <span className="min-w-12 text-center text-xl font-bold text-cyan-300">{quantity}</span>
+                    <span data-testid="material-calculator-quantity" className="min-w-12 text-center text-xl font-bold text-cyan-300">{quantity}</span>
                     <button
                       type="button"
                       onClick={() => setQuantity((value) => value + 1)}

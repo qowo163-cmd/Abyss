@@ -1,7 +1,7 @@
 /* @vitest-environment jsdom */
 import "@testing-library/jest-dom/vitest";
 import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
-import { afterEach, describe, expect, it, vi } from "vitest";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const { monsters } = vi.hoisted(() => ({
   monsters: [
@@ -17,12 +17,16 @@ vi.mock("@/hooks/useMonsterData", () => ({ useMonsterData: () => monsters }));
 
 import MaterialCalculator from "./MaterialCalculator";
 
-describe("MaterialCalculator multiple recipes", () => {
+describe("MaterialCalculator multiple recipes and saved tabs", () => {
+  beforeEach(() => {
+    cleanup();
+    window.localStorage.clear();
+  });
   afterEach(cleanup);
 
   it("shows the compact multiple-recipe summary and both selectable recipes", async () => {
     render(<MaterialCalculator />);
-    fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
+    fireEvent.change(screen.getByPlaceholderText("만들 헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
     fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
 
     expect(screen.getByText("주재료 / 대체주재료 + 부재료 / 대체부재료")).toBeInTheDocument();
@@ -32,7 +36,7 @@ describe("MaterialCalculator multiple recipes", () => {
 
   it("recalculates materials when the second recipe is selected", async () => {
     render(<MaterialCalculator />);
-    fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
+    fireEvent.change(screen.getByPlaceholderText("만들 헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
     fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
 
     await waitFor(() => expect(screen.getByText("주재료")).toBeInTheDocument());
@@ -45,7 +49,7 @@ describe("MaterialCalculator multiple recipes", () => {
 
   it("shows the general material list label and material quantity units", async () => {
     render(<MaterialCalculator />);
-    fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
+    fireEvent.change(screen.getByPlaceholderText("만들 헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
     fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
     await waitFor(() => {
       expect(screen.getByText("필요 재료 목록")).toBeInTheDocument();
@@ -57,7 +61,7 @@ describe("MaterialCalculator multiple recipes", () => {
     monsters.push({ id: "leaf", name: "네펠레맨", main: "-", sub: "-", attribute: "짐승", baseLevel: 95, maxLevel: 120, acquired: "0" });
     try {
       render(<MaterialCalculator />);
-      fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "네펠레맨" } });
+      fireEvent.change(screen.getByPlaceholderText("만들 헨치 이름 검색..."), { target: { value: "네펠레맨" } });
       fireEvent.click(await screen.findByRole("button", { name: /네펠레맨/ }));
 
       expect(screen.getByText("필요 재료 목록")).toBeInTheDocument();
@@ -81,7 +85,7 @@ describe("MaterialCalculator multiple recipes", () => {
 
     try {
       render(<MaterialCalculator />);
-      fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
+      fireEvent.change(screen.getByPlaceholderText("만들 헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
       fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
 
       expect(screen.getByRole("button", { name: "주재료" })).toBeInTheDocument();
@@ -91,6 +95,36 @@ describe("MaterialCalculator multiple recipes", () => {
       Object.assign(main, originalMain);
       monsters.splice(monsters.length - lowerIngredients.length, lowerIngredients.length);
     }
+  });
+
+
+  it("keeps independent calculator tabs and restores selections after remount", async () => {
+    const firstRender = render(<MaterialCalculator />);
+    fireEvent.change(screen.getByPlaceholderText("만들 헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
+    fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
+    fireEvent.click(screen.getByRole("button", { name: "제작 수량 증가" }));
+    fireEvent.click((await screen.findAllByRole("checkbox"))[0]);
+
+    expect(screen.getByTestId("material-calculator-quantity")).toHaveTextContent("2");
+    expect((await screen.findAllByRole("checkbox"))[0]).toBeChecked();
+
+    fireEvent.click(screen.getByRole("button", { name: "재료계산기 탭 추가" }));
+    expect(screen.getByRole("tab", { name: "탭 2" })).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("만들 헨치를 선택해 주세요")).toBeInTheDocument();
+
+    firstRender.unmount();
+    render(<MaterialCalculator />);
+
+    expect(screen.getByRole("tab", { name: "다중조합헨치" })).toBeInTheDocument();
+    expect(screen.getByRole("tab", { name: "탭 2" })).toHaveAttribute("aria-selected", "true");
+    fireEvent.click(screen.getByRole("tab", { name: "다중조합헨치" }));
+    expect(screen.getByTestId("material-calculator-quantity")).toHaveTextContent("2");
+    expect((await screen.findAllByRole("checkbox"))[0]).toBeChecked();
+
+    const stored = JSON.parse(window.localStorage.getItem("abyss-material-calculator-tabs-v1") || "{}");
+    expect(stored.tabs).toHaveLength(2);
+    expect(stored.tabs[0].selectedMonster.name).toBe("다중조합헨치");
+    expect(stored.tabs[0].quantity).toBe(2);
   });
 
 });

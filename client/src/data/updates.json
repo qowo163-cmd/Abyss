@@ -1,5 +1,19 @@
 [
   {
+    "id": "history-2026-10-19-material-calculator-multi-tab-persistent-state",
+    "date": "2026-10-19",
+    "version": "v3.100.12",
+    "title": "재료계산기 여러 탭 및 자동 저장",
+    "description": "재료계산기에서 여러 목표 헨치의 계산을 별도 탭으로 유지하고, 페이지 이동이나 새로고침 이후에도 계산 내용을 복원합니다.",
+    "changes": [
+      "믹스법처럼 최대 7개의 재료계산기 탭을 추가·전환·닫기 가능",
+      "탭마다 목표 헨치, 제작 수량, 재료 체크 상태와 펼친 상세정보를 독립적으로 보관",
+      "탭별 대체 조합 선택도 별도 저장해 페이지 이동 및 새로고침 뒤 복원",
+      "브라우저 localStorage에 자동 저장하며 기존 173레벨 상한선 계산 규칙은 유지"
+    ],
+    "type": "update"
+  },
+  {
     "id": "history-2026-10-19-material-calculator-level-cap-173",
     "date": "2026-10-19",
     "version": "v3.100.11",
