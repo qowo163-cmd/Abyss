@@ -32,7 +32,7 @@ describe("material calculator recipes", () => {
     ]);
   });
 
-  it("counts obtainable 140~169 materials for the selected recipe", () => {
+  it("counts obtainable 140~173 materials for the selected recipe", () => {
     expect(calculateMaterialCounts(monsters, monsters[0])).toEqual({
       레벨150재료: 1,
       레벨160재료: 1,
@@ -40,19 +40,55 @@ describe("material calculator recipes", () => {
   });
 
 
-  it("continues through 170+ level intermediate monsters until reaching 140~169 materials", () => {
-    const monsters = [
-      { id: "target", name: "최종헨치", baseLevel: 220, main: "중간170 [3]", sub: "중간180 [3]" },
-      { id: "middle170", name: "중간170", baseLevel: 170, main: "재료150 [3]", sub: "재료151 [3]" },
-      { id: "middle180", name: "중간180", baseLevel: 180, main: "재료152 [3]", sub: "재료153 [3]" },
+  it("uses 173 as an inclusive upper cap and expands obtainable ingredients above it", () => {
+    const source = [
+      { id: "target", name: "최종헨치", baseLevel: 220, acquired: "x", main: "득코가능174 [1]", sub: "상한재료173 [1]" },
+      { id: "obtainable174", name: "득코가능174", baseLevel: 174, acquired: "0", main: "재료170 [1]", sub: "재료160 [1]" },
+      { id: "cap173", name: "상한재료173", baseLevel: 173, acquired: "0", main: "더낮은재료A [1]", sub: "더낮은재료B [1]" },
+      { id: "m170", name: "재료170", baseLevel: 170, acquired: "0", main: "-", sub: "-" },
+      { id: "m160", name: "재료160", baseLevel: 160, acquired: "0", main: "-", sub: "-" },
+      { id: "lowerA", name: "더낮은재료A", baseLevel: 100, acquired: "0", main: "-", sub: "-" },
+      { id: "lowerB", name: "더낮은재료B", baseLevel: 105, acquired: "0", main: "-", sub: "-" },
+    ];
+
+    expect(calculateMaterialCounts(source, source[0])).toEqual({
+      재료170: 1,
+      재료160: 1,
+      상한재료173: 1,
+    });
+  });
+
+  it("uses the 140~173 fallback only when obtainability metadata is missing", () => {
+    const source = [
+      { id: "target", name: "최종헨치", baseLevel: 220, main: "경계173 [1]", sub: "초과174 [1]" },
+      { id: "cap173", name: "경계173", baseLevel: 173, main: "하위A [1]", sub: "하위B [1]" },
+      { id: "over174", name: "초과174", baseLevel: 174, main: "재료150 [1]", sub: "재료160 [1]" },
+      { id: "a", name: "하위A", baseLevel: 90, main: "-", sub: "-" },
+      { id: "b", name: "하위B", baseLevel: 90, main: "-", sub: "-" },
       { id: "m150", name: "재료150", baseLevel: 150, main: "-", sub: "-" },
+      { id: "m160", name: "재료160", baseLevel: 160, main: "-", sub: "-" },
+    ];
+
+    expect(calculateMaterialCounts(source, source[0])).toEqual({
+      경계173: 1,
+      재료150: 1,
+      재료160: 1,
+    });
+  });
+
+  it("continues through 174+ level intermediate monsters until reaching 140~173 materials", () => {
+    const monsters = [
+      { id: "target", name: "최종헨치", baseLevel: 220, main: "중간174 [3]", sub: "중간180 [3]" },
+      { id: "middle174", name: "중간174", baseLevel: 174, main: "재료173 [3]", sub: "재료151 [3]" },
+      { id: "middle180", name: "중간180", baseLevel: 180, main: "재료152 [3]", sub: "재료153 [3]" },
+      { id: "m173", name: "재료173", baseLevel: 173, main: "-", sub: "-" },
       { id: "m151", name: "재료151", baseLevel: 151, main: "-", sub: "-" },
       { id: "m152", name: "재료152", baseLevel: 152, main: "-", sub: "-" },
       { id: "m153", name: "재료153", baseLevel: 153, main: "-", sub: "-" },
     ];
 
     expect(calculateMaterialCounts(monsters, monsters[0])).toEqual({
-      재료150: 1,
+      재료173: 1,
       재료151: 1,
       재료152: 1,
       재료153: 1,
@@ -60,7 +96,7 @@ describe("material calculator recipes", () => {
   });
 
 
-  it("does not ask for a recipe choice for 140~169 final materials", () => {
+  it("does not ask for a recipe choice for 140~173 final materials", () => {
     const monsters = [
       { id: "target", name: "최종헨치", baseLevel: 220, main: "재료150 [3]", sub: "재료151 [3]" },
       { id: "m150", name: "재료150", baseLevel: 150, main: "하위1 [2]", sub: "하위2 [2]", main2: "하위3 [2]", sub2: "하위4 [2]" },
@@ -84,7 +120,7 @@ describe("material calculator recipes", () => {
     });
   });
 
-  it("expands an unobtainable 140~169 material into its sub-mix ingredients", () => {
+  it("expands an unobtainable material into its sub-mix ingredients", () => {
     const source = [
       { id: "target", name: "최종헨치", baseLevel: 220, main: "득코불가헨치 [1]", sub: "일반재료 [1]" },
       { id: "blocked", name: "득코불가헨치", baseLevel: 150, acquired: "x", main: "하위재료A [1]", sub: "하위재료B [1]" },

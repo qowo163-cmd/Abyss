@@ -19,7 +19,7 @@ export type MaterialCounts = Record<string, number>;
 export type RecipeSelections = Record<string, number>;
 
 const TARGET_LEVEL_MIN = 140;
-const TARGET_LEVEL_MAX = 169;
+const TARGET_LEVEL_MAX = 173;
 
 export function normalizeRecipeName(value: string): string {
   return value.replace(/\s*\[\d+\]\s*$/, "").trim();
@@ -47,10 +47,15 @@ function isTargetLevel(monster: MaterialRecipeMonster): boolean {
 /**
  * 재료로 직접 확보할 수 있는 헨치인지 판단한다.
  * 실제 데이터에는 acquired: "0"(득코 가능) / "x"(득코 불가능)가 명시되어 있다.
- * 오래된 테스트/부분 데이터에 acquired가 없을 때만 140~169레벨 규칙으로 보완한다.
+ * 득코 상태가 없는 오래된/부분 데이터는 140~173레벨 규칙으로 보완한다. 명시적으로 득코 가능이어도 173레벨을 넘으면 최상위 재료로 고정하지 않고 하위 믹스를 펼친다.
  */
 function isObtainableMaterial(monster: MaterialRecipeMonster): boolean {
-  if (monster.acquired === '0') return true;
+  if (monster.acquired === '0') {
+    // 계산기의 최상위 체크 재료는 173레벨까지 허용한다.
+    // 그보다 높은 득코 가능 헨치는 상한선을 넘으므로 하위 믹스로 계속 펼친다.
+    const level = Number(monster.baseLevel);
+    return !Number.isFinite(level) || level <= TARGET_LEVEL_MAX;
+  }
   if (monster.acquired === 'x') return false;
   return isTargetLevel(monster);
 }
@@ -134,7 +139,7 @@ export function collectRecipeChoices(
  * - acquired === '0'인 헨치는 레벨과 관계없이 가장 가까운(최상위) 확보 재료로 집계하고 더 펼치지 않는다.
  * - acquired === 'x'인 헨치는 하위 조합법이 있으면 그 하위 믹스를 계속 따라간다.
  * - 레벨과 관계없이 하위 조합법이 없는 헨치는 목록에서 빠뜨리지 않는다.
- * - 오래된/부분 데이터에서 acquired가 없을 때만 140~169레벨을 최종 재료로 취급한다.
+ * - 득코 상태가 없는 오래된/부분 데이터는 140~173레벨을 최종 재료로 취급한다. 명시적으로 득코 가능한 헨치도 173레벨 초과면 하위 믹스를 펼친다.
  * - 여러 조합법은 recipeSelections에 지정된 경로를 사용한다.
  */
 export function calculateMaterialCounts(

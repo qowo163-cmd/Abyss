@@ -177,7 +177,7 @@ export default function MaterialCalculator() {
           <Calculator className="h-8 w-8 text-cyan-400" />
           <div>
             <h1 className="text-3xl font-bold text-cyan-300">재료 계산기</h1>
-            <p className="mt-1 text-xs text-slate-500">득코 가능한 헨치는 가장 상위 단계에서 체크하고, 득코 불가능한 헨치만 하위 믹스를 따라갑니다.</p>
+            <p className="mt-1 text-xs text-slate-500">173레벨 이하의 득코 가능 헨치는 최상위 단계에서 체크하고, 174레벨 이상은 하위 믹스를 따라갑니다.</p>
           </div>
         </div>
 
@@ -228,7 +228,7 @@ export default function MaterialCalculator() {
           <div className="rounded-xl border border-dashed border-cyan-500/20 bg-slate-800/30 py-20 text-center">
             <GitBranch className="mx-auto mb-3 h-10 w-10 text-slate-600" />
             <p className="text-lg font-semibold text-slate-300">만들 헨치를 선택해 주세요</p>
-            <p className="mt-1 text-sm text-slate-500">믹스법을 선택해 필요한 재료를 확인하세요. 득코 가능한 헨치는 해당 단계에서 멈추고, 득코 불가능한 헨치만 하위 믹스를 따라갑니다.</p>
+            <p className="mt-1 text-sm text-slate-500">믹스법을 선택해 필요한 재료를 확인하세요. 173레벨 이하의 득코 가능 헨치는 해당 단계에서 멈추고, 174레벨 이상 또는 득코 불가능한 헨치는 하위 믹스를 따라갑니다.</p>
           </div>
         ) : (
           <div className="grid items-start gap-6 lg:grid-cols-2">
@@ -307,7 +307,7 @@ export default function MaterialCalculator() {
                     <Calculator className="h-5 w-5 text-cyan-400" />
                     <h2 className="text-xl font-bold text-cyan-300">재료계산기</h2>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">득코 가능한 최상위 헨치만 체크할 수 있습니다. 득코 불가능한 헨치는 하위 믹스를 따라갑니다.</p>
+                  <p className="mt-1 text-xs text-slate-500">173레벨 이하의 득코 가능한 최상위 헨치만 체크할 수 있습니다. 174레벨 이상 헨치는 하위 믹스를 따라갑니다.</p>
                 </div>
                 <button
                   type="button"
