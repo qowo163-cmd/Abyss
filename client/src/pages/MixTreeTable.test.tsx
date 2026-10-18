@@ -45,6 +45,17 @@ describe("MixTreeTable", () => {
     expect(subTable).toHaveTextContent("가루곤");
   });
 
+  it("uses larger, bolder typography for mix-tree cells and table headings", () => {
+    render(<MixTreeTable />);
+
+    const mainTable = screen.getByTestId("mix-tree2-main-table");
+    const targetName = Array.from(mainTable.querySelectorAll("td span")).find((span) => span.textContent === "뉴큐티캣");
+    expect(targetName).toBeTruthy();
+    expect(targetName).toHaveClass("font-extrabold");
+    expect(targetName?.closest("td")).toHaveClass("text-sm");
+    expect(mainTable.querySelector("thead tr")).toHaveClass("text-sm", "font-extrabold");
+  });
+
   it("searches for a result monster once and automatically displays its main and sub trees", () => {
     render(<MixTreeTable />);
 
