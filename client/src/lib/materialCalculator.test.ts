@@ -140,4 +140,41 @@ describe("material calculator recipes", () => {
     });
   });
 
+
+  it("stops at the highest obtainable ingredient even when it has its own lower-level mix", () => {
+    const source = [
+      { id: "target", name: "최종헨치", baseLevel: 220, acquired: "x", main: "득코불가중간 [1]", sub: "바로득코가능 [1]" },
+      { id: "blocked", name: "득코불가중간", baseLevel: 180, acquired: "x", main: "최상위득코가능 [1]", sub: "믹스없는불가헨치 [1]" },
+      { id: "top", name: "최상위득코가능", baseLevel: 95, acquired: "0", main: "더낮은재료A [1]", sub: "더낮은재료B [1]" },
+      { id: "low-a", name: "더낮은재료A", baseLevel: 20, acquired: "0", main: "더아래A [1]", sub: "더아래B [1]" },
+      { id: "low-b", name: "더낮은재료B", baseLevel: 30, acquired: "0", main: "더아래C [1]", sub: "더아래D [1]" },
+      { id: "direct", name: "바로득코가능", baseLevel: 110, acquired: "0", main: "더낮은재료A [1]", sub: "더낮은재료B [1]" },
+      { id: "terminal", name: "믹스없는불가헨치", baseLevel: 145, acquired: "x", main: "-", sub: "-" },
+    ];
+
+    expect(calculateMaterialCounts(source, source[0])).toEqual({
+      최상위득코가능: 1,
+      믹스없는불가헨치: 1,
+      바로득코가능: 1,
+    });
+  });
+
+  it("does not expose nested recipe choices below an obtainable ingredient", () => {
+    const source = [
+      { id: "target", name: "최종헨치", baseLevel: 220, acquired: "x", main: "득코불가중간 [1]", sub: "득코가능중간 [1]" },
+      { id: "blocked", name: "득코불가중간", baseLevel: 180, acquired: "x", main: "A [1]", sub: "B [1]", main2: "C [1]", sub2: "D [1]" },
+      { id: "available", name: "득코가능중간", baseLevel: 95, acquired: "0", main: "E [1]", sub: "F [1]", main2: "G [1]", sub2: "H [1]" },
+      { id: "a", name: "A", baseLevel: 90, acquired: "0", main: "-", sub: "-" },
+      { id: "b", name: "B", baseLevel: 90, acquired: "0", main: "-", sub: "-" },
+      { id: "c", name: "C", baseLevel: 90, acquired: "0", main: "-", sub: "-" },
+      { id: "d", name: "D", baseLevel: 90, acquired: "0", main: "-", sub: "-" },
+      { id: "e", name: "E", baseLevel: 90, acquired: "0", main: "-", sub: "-" },
+      { id: "f", name: "F", baseLevel: 90, acquired: "0", main: "-", sub: "-" },
+      { id: "g", name: "G", baseLevel: 90, acquired: "0", main: "-", sub: "-" },
+      { id: "h", name: "H", baseLevel: 90, acquired: "0", main: "-", sub: "-" },
+    ];
+
+    expect(collectRecipeChoices(source, source[0]).map((monster) => monster.name)).toEqual(["득코불가중간"]);
+  });
+
 });

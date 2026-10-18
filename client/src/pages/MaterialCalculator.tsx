@@ -177,7 +177,7 @@ export default function MaterialCalculator() {
           <Calculator className="h-8 w-8 text-cyan-400" />
           <div>
             <h1 className="text-3xl font-bold text-cyan-300">재료 계산기</h1>
-            <p className="mt-1 text-xs text-slate-500">득코 불가능한 헨치는 하위 믹스로 펼치고, 하위 조합이 없는 헨치는 직접 재료로 표시합니다.</p>
+            <p className="mt-1 text-xs text-slate-500">득코 가능한 헨치는 가장 상위 단계에서 체크하고, 득코 불가능한 헨치만 하위 믹스를 따라갑니다.</p>
           </div>
         </div>
 
@@ -228,7 +228,7 @@ export default function MaterialCalculator() {
           <div className="rounded-xl border border-dashed border-cyan-500/20 bg-slate-800/30 py-20 text-center">
             <GitBranch className="mx-auto mb-3 h-10 w-10 text-slate-600" />
             <p className="text-lg font-semibold text-slate-300">만들 헨치를 선택해 주세요</p>
-            <p className="mt-1 text-sm text-slate-500">믹스법을 선택해 필요한 재료를 확인하세요. 득코 불가능한 헨치는 하위 믹스를 따라가며, 하위 조합이 없으면 해당 헨치를 직접 표시합니다.</p>
+            <p className="mt-1 text-sm text-slate-500">믹스법을 선택해 필요한 재료를 확인하세요. 득코 가능한 헨치는 해당 단계에서 멈추고, 득코 불가능한 헨치만 하위 믹스를 따라갑니다.</p>
           </div>
         ) : (
           <div className="grid items-start gap-6 lg:grid-cols-2">
@@ -307,7 +307,7 @@ export default function MaterialCalculator() {
                     <Calculator className="h-5 w-5 text-cyan-400" />
                     <h2 className="text-xl font-bold text-cyan-300">재료계산기</h2>
                   </div>
-                  <p className="mt-1 text-xs text-slate-500">체크박스로 확보한 재료를 표시할 수 있습니다. 득코 불가능한 헨치는 하위 재료를 계산합니다.</p>
+                  <p className="mt-1 text-xs text-slate-500">득코 가능한 최상위 헨치만 체크할 수 있습니다. 득코 불가능한 헨치는 하위 믹스를 따라갑니다.</p>
                 </div>
                 <button
                   type="button"
@@ -380,8 +380,10 @@ export default function MaterialCalculator() {
                             <input
                               type="checkbox"
                               checked={material.isChecked}
+                              disabled={materialMonster?.acquired === 'x' && detailRecipes.length === 0}
+                              title={materialMonster?.acquired === 'x' && detailRecipes.length === 0 ? '득코 불가능하며 하위 믹스가 없어 체크할 수 없습니다.' : undefined}
                               onChange={() => toggleMaterialCheck(material.name)}
-                              className="h-4 w-4 cursor-pointer accent-cyan-400"
+                              className="h-4 w-4 cursor-pointer accent-cyan-400 disabled:cursor-not-allowed disabled:opacity-40"
                             />
                             <button
                               type="button"

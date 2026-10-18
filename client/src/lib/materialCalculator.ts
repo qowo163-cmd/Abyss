@@ -45,6 +45,17 @@ function isTargetLevel(monster: MaterialRecipeMonster): boolean {
 }
 
 /**
+ * 재료로 직접 확보할 수 있는 헨치인지 판단한다.
+ * 실제 데이터에는 acquired: "0"(득코 가능) / "x"(득코 불가능)가 명시되어 있다.
+ * 오래된 테스트/부분 데이터에 acquired가 없을 때만 140~169레벨 규칙으로 보완한다.
+ */
+function isObtainableMaterial(monster: MaterialRecipeMonster): boolean {
+  if (monster.acquired === '0') return true;
+  if (monster.acquired === 'x') return false;
+  return isTargetLevel(monster);
+}
+
+/**
  * main + sub를 하나의 조합법으로, main2 + sub2를 두 번째 조합법으로 해석한다.
  * 데이터가 한쪽만 존재하는 부분 데이터는 제외한다.
  */
@@ -80,8 +91,9 @@ function recipeIngredients(monster: MaterialRecipeMonster, selections?: RecipeSe
 }
 
 /**
- * 현재 선택된 조합 경로에서 조합법을 골라야 하는 모든 헨치를 반환한다.
- * 득코 가능한 140~169레벨 재료는 최종 재료이며, 득코 불가능한 재료는 하위 조합 선택을 허용한다.
+ * 현재 선택된 조합 경로에서 사용자가 조합법을 골라야 하는 헨치를 반환한다.
+ * 선택한 목표 자체는 항상 펼치되, 그 아래에서는 득코 가능한 헨치를 최상위 재료로 보고 멈춘다.
+ * 득코 불가능한 헨치에 조합법이 여러 개 있을 때만 그 하위 경로에서 조합 선택을 허용한다.
  */
 export function collectRecipeChoices(
   monsters: MaterialRecipeMonster[],
@@ -96,9 +108,9 @@ export function collectRecipeChoices(
     if (ancestry.has(key) || visited.has(key)) return;
     visited.add(key);
 
-    // 140~169레벨이라도 득코 불가능(acquired === 'x')하면 하위 믹스를 따라간다.
-    // 득코 가능한 해당 레벨 재료만 최종 재료로 보고 더 펼치지 않는다.
-    if (isTargetLevel(monster) && monster.acquired !== 'x') return;
+    // 목표 헨치 자체는 조합 선택 대상으로 유지한다. 그 아래의 득코 가능 헨치는
+    // 레벨과 무관하게 최상위 확보 재료이므로 그 안의 레시피는 더 펼치지 않는다.
+    if (key !== (selectedMonster.id || selectedMonster.name) && isObtainableMaterial(monster)) return;
 
     const options = getRecipeOptions(monster);
     if (options.length > 1) choices.push(monster);
@@ -116,17 +128,14 @@ export function collectRecipeChoices(
 }
 
 /**
- * 선택한 헨치를 만들기 위해 필요한 재료를 재귀적으로 집계한다.
+ * 선택한 헨치를 만들기 위해 필요한 체크 대상 재료를 집계한다.
  *
  * 핵심 규칙:
- * - 득코 가능한 140~169레벨: 최종 재료로 집계한다.
- * - 득코 불가능(acquired === 'x')한 헨치: 조합법이 있으면 하위 믹스를 계속 따라간다.
- * - 레벨과 관계없이 하위 조합법이 없는 헨치: 직접 필요한 재료로 표시한다.
- * - 170 이상 및 140 미만: 하위 조합법이 있으면 계속 따라간다.
- * - 여러 조합법: recipeSelections에 선택된 조합을 사용한다.
- *
- * 따라서 170레벨 이상인 중간 헨치도 조합법을 따라가며, 획득 불가능한 재료의
- * 하위 조합과 하위 믹스가 없는 직접 재료를 체크 목록에 포함한다.
+ * - acquired === '0'인 헨치는 레벨과 관계없이 가장 가까운(최상위) 확보 재료로 집계하고 더 펼치지 않는다.
+ * - acquired === 'x'인 헨치는 하위 조합법이 있으면 그 하위 믹스를 계속 따라간다.
+ * - 레벨과 관계없이 하위 조합법이 없는 헨치는 목록에서 빠뜨리지 않는다.
+ * - 오래된/부분 데이터에서 acquired가 없을 때만 140~169레벨을 최종 재료로 취급한다.
+ * - 여러 조합법은 recipeSelections에 지정된 경로를 사용한다.
  */
 export function calculateMaterialCounts(
   monsters: MaterialRecipeMonster[],
@@ -154,8 +163,9 @@ export function calculateMaterialCounts(
     const materialKey = material.id || material.name;
     if (ancestry.has(materialKey)) return;
 
-    // 득코 가능한 140~169레벨은 그대로 체크할 재료다. 득코 불가능하면 하위 믹스를 펼친다.
-    if (isTargetLevel(material) && material.acquired !== 'x') {
+    // 득코 가능한 헨치는 레벨과 무관하게 가장 상위의 체크 대상이다.
+    // 하위 레시피가 있더라도 실제로 확보할 수 있으므로 더 깊은 재료로 분해하지 않는다.
+    if (isObtainableMaterial(material)) {
       add(material.name, amount);
       return;
     }

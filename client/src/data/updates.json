@@ -1,5 +1,19 @@
 [
   {
+    "id": "history-2026-10-19-material-calculator-highest-obtainable-boundary",
+    "date": "2026-10-19",
+    "version": "v3.100.10",
+    "title": "재료 계산기 득코 가능 최상위 재료 기준 개선",
+    "description": "득코 불가능한 헨치만 하위 믹스로 펼치고, 득코 가능한 헨치는 레벨과 관계없이 체크 가능한 재료로 표시합니다.",
+    "changes": [
+      "하위 조합이 있는 득코 가능 헨치는 그 단계에서 멈춰, 최하위 재료까지 불필요하게 펼치지 않도록 수정",
+      "득코 불가능한 헨치의 하위 믹스만 따라가며, 다음으로 득코 가능한 헨치를 체크 목록에 표시",
+      "네펠레맨처럼 하위 조합법이 없는 헨치는 목록에 유지하고, 득코 불가능하며 더 펼칠 조합이 없는 항목은 체크 비활성화",
+      "최상위 득코 가능 경계와 하위 조합 선택 동작에 대한 회귀 테스트 추가"
+    ],
+    "type": "fix"
+  },
+  {
     "id": "history-2026-08-26-android-app-distribution-retired",
     "date": "2026-08-26",
     "version": "v3.100.9",
@@ -152,7 +166,8 @@
       "홈 화면 앱 다운로드 안내를 최신 업데이트 가능 APK 파일로 교체"
     ],
     "type": "feature"
-  }, {
+  },
+  {
     "id": "history-2026-08-25-cross-platform-marketplace-alerts-admin-nav",
     "date": "2026-08-25",
     "version": "v3.97.0",
@@ -165,7 +180,8 @@
       "관리자 계정에만 관리자 페이지 진입 탭을 표시하고, 관리자 대시보드는 일반 좌측 메뉴 대신 전용 좌측 관리 메뉴로 재구성"
     ],
     "type": "feature"
-  }, {
+  },
+  {
     "id": "history-2026-08-25-android-app-download",
     "date": "2026-08-25",
     "version": "v3.96.0",
@@ -177,7 +193,8 @@
       "현재 Android 내부 테스트 빌드(v1.0.0) 설치 화면으로 연결하고, 다음 서명·배포 검증 빌드로 교체 예정"
     ],
     "type": "feature"
-  }, {
+  },
+  {
     "id": "history-2026-08-22-marketplace-auto-total-price",
     "date": "2026-08-22",
     "version": "v3.95.0",
@@ -189,7 +206,8 @@
       "등록 전 단가 × 수량 = 전체 가격 미리보기를 표시하고, 서버도 단가 기반 전체 가격을 저장하도록 보호"
     ],
     "type": "improvement"
-  }, {
+  },
+  {
     "id": "history-2026-08-22-marketplace-partial-trades-inbox",
     "date": "2026-08-22",
     "version": "v3.93.0",

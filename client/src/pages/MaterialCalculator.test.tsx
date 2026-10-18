@@ -68,4 +68,29 @@ describe("MaterialCalculator multiple recipes", () => {
     }
   });
 
+
+  it("lists only the highest obtainable hench and does not list its lower mix ingredients", async () => {
+    const main = monsters.find((monster) => monster.id === "main")!;
+    const originalMain = { ...main };
+    const lowerIngredients = [
+      { id: "lower-a", name: "하위재료A", main: "더아래A", sub: "더아래B", attribute: "드래곤", baseLevel: 20, maxLevel: 40, acquired: "0" },
+      { id: "lower-b", name: "하위재료B", main: "더아래C", sub: "더아래D", attribute: "드래곤", baseLevel: 30, maxLevel: 50, acquired: "0" },
+    ];
+    Object.assign(main, { acquired: "0", main: "하위재료A", sub: "하위재료B" });
+    monsters.push(...lowerIngredients);
+
+    try {
+      render(<MaterialCalculator />);
+      fireEvent.change(screen.getByPlaceholderText("헨치 이름 검색..."), { target: { value: "다중조합헨치" } });
+      fireEvent.click(await screen.findByRole("button", { name: /다중조합헨치/ }));
+
+      expect(screen.getByRole("button", { name: "주재료" })).toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "하위재료A" })).not.toBeInTheDocument();
+      expect(screen.queryByRole("button", { name: "하위재료B" })).not.toBeInTheDocument();
+    } finally {
+      Object.assign(main, originalMain);
+      monsters.splice(monsters.length - lowerIngredients.length, lowerIngredients.length);
+    }
+  });
+
 });
