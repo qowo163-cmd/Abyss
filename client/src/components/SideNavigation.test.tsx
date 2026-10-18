@@ -61,11 +61,22 @@ describe("SideNavigation logout", () => {
     render(<SideNavigation currentPath="/marketplace" onLogout={vi.fn()} />);
 
     const labels = screen.getAllByRole("link").map((link) => link.textContent);
-    expect(screen.getByRole("link", { name: "믹스법2" })).toHaveAttribute("href", "/tree2");
+    expect(screen.getByRole("link", { name: "믹스법v1" })).toHaveAttribute("href", "/tree");
+    expect(screen.getByRole("link", { name: "믹스법v2" })).toHaveAttribute("href", "/tree2");
     expect(screen.getByRole("link", { name: "역산믹스법" })).toHaveAttribute("href", "/reverse");
-    expect(labels.indexOf("믹스법2")).toBe(labels.indexOf("믹스법") + 1);
-    expect(labels.indexOf("역산믹스법")).toBe(labels.indexOf("믹스법2") + 1);
+    expect(labels.indexOf("믹스법v2")).toBe(labels.indexOf("믹스법v1") + 1);
+    expect(labels.indexOf("역산믹스법")).toBe(labels.indexOf("믹스법v2") + 1);
     expect(labels.indexOf("거래소")).toBe(labels.indexOf("역산믹스법") + 1);
     expect(screen.getByRole("link", { name: "재료계산기" })).toHaveAttribute("href", "/material-calculator");
+  });
+
+  it("supports a compact sidebar with an accessible expand control", () => {
+    const onToggleCollapsed = vi.fn();
+    render(<SideNavigation currentPath="/tree2" collapsed onToggleCollapsed={onToggleCollapsed} onLogout={vi.fn()} />);
+
+    expect(screen.getByTestId("sidebar-navigation")).toHaveClass("w-20");
+    expect(screen.getByRole("link", { name: "믹스법v2" })).toHaveAttribute("title", "믹스법v2");
+    fireEvent.click(screen.getByRole("button", { name: "왼쪽 메뉴 펼치기" }));
+    expect(onToggleCollapsed).toHaveBeenCalledTimes(1);
   });
 });

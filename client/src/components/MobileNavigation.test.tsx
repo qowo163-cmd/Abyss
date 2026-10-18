@@ -11,14 +11,14 @@ describe("MobileNavigation", () => {
     render(<MobileNavigation currentPath="/tree" isAdmin={false} onLogout={vi.fn()} />);
 
     expect(screen.getByRole("navigation", { name: "모바일 주요 탐색" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "믹스법" })).toHaveClass("bg-sky-700");
+    expect(screen.getByRole("link", { name: "믹스법v1" })).toHaveClass("bg-sky-700");
     expect(screen.getByRole("link", { name: "거래소" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "거래소" }).querySelector("span")).toHaveClass("whitespace-nowrap");
 
     fireEvent.click(screen.getByRole("button", { name: "전체 메뉴" }));
     expect(screen.getByRole("link", { name: "레벨계산기" })).toBeInTheDocument();
     expect(screen.getByRole("link", { name: "역산믹스법" })).toBeInTheDocument();
-    expect(screen.getByRole("link", { name: "믹스법2" })).toHaveAttribute("href", "/tree2");
+    expect(screen.getByRole("link", { name: "믹스법v2" })).toHaveAttribute("href", "/tree2");
     expect(screen.getByRole("link", { name: "레벨계산기" }).querySelector("span")).toHaveClass("whitespace-nowrap");
     expect(screen.queryByRole("link", { name: "관리자 대시보드" })).not.toBeInTheDocument();
   });

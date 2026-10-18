@@ -13,7 +13,7 @@ type MobileNavItem = {
 const PRIMARY_ITEMS: MobileNavItem[] = [
   { label: "홈", path: "/", icon: Home },
   { label: "헨치", path: "/hench", icon: Users },
-  { label: "믹스법", path: "/tree", icon: GitBranch },
+  { label: "믹스법v1", path: "/tree", icon: GitBranch },
   { label: "거래소", path: "/marketplace", icon: Store },
   { label: "뉴비가이드", path: "/guide", icon: BookOpenCheck },
 ];
@@ -22,7 +22,7 @@ const MORE_ITEMS: MobileNavItem[] = [
   { label: "레벨계산기", path: "/calculator", icon: Calculator },
   { label: "재료계산기", path: "/material-calculator", icon: Calculator },
   { label: "역산믹스법", path: "/reverse", icon: GitBranch },
-  { label: "믹스법2", path: "/tree2", icon: GitBranch },
+  { label: "믹스법v2", path: "/tree2", icon: GitBranch },
   { label: "즐겨찾기", path: "/favorites", icon: Heart },
   { label: "건의사항", path: "/feedback", icon: MessageSquare },
 ];

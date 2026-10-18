@@ -293,7 +293,7 @@ export default function ReverseTree() {
     <div className="flex min-h-full min-w-0 flex-col bg-gradient-to-br from-slate-950 via-slate-900 to-slate-950">
       <header className="flex-shrink-0 border-b border-cyan-500/20 bg-slate-900/80 backdrop-blur-sm">
         <div className="px-4 py-3 sm:px-6 sm:py-4">
-          <div className="mb-2 flex items-center gap-2"><GitBranch className="h-5 w-5 text-cyan-400 sm:h-6 sm:w-6" /><h1 className="text-lg font-bold text-cyan-300 sm:text-2xl">믹스 트리</h1></div>
+          <div className="mb-2 flex items-center gap-2"><GitBranch className="h-5 w-5 text-cyan-400 sm:h-6 sm:w-6" /><h1 className="text-lg font-bold text-cyan-300 sm:text-2xl">믹스법v1</h1></div>
           <p className="text-xs text-slate-400 sm:text-sm">특정 헨치를 만들기 위한 모든 하위 재료 트리를 단계별로 확인하세요.</p>
         </div>
       </header>
@@ -324,7 +324,7 @@ export default function ReverseTree() {
           <button
             type="button"
             onClick={addTab}
-            aria-label="믹스법 탭 추가"
+            aria-label="믹스법v1 탭 추가"
             className="mb-0.5 flex-shrink-0 rounded-lg p-1.5 text-slate-400 transition-colors hover:bg-slate-800/60 hover:text-cyan-300"
           >
             <Plus className="h-4 w-4" />
@@ -358,7 +358,7 @@ export default function ReverseTree() {
           </section>
 
           {treeRoot ? <section ref={treeCanvasRef} data-testid="mixbook-canvas" className="abyss-mixbook-canvas min-h-0 min-w-0 flex-1 overflow-visible rounded-2xl border p-2 [overflow-anchor:none] sm:overflow-auto sm:p-4"><TreeNodeCard node={treeRoot} expandedNodes={expandedNodes} onToggle={toggleNode} onShowDetail={setDetailMonster} buildTreeNode={buildTreeNode} /></section> : (
-            <section className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-800/30"><div className="px-4 py-8 text-center"><GitBranch className="mx-auto mb-3 h-10 w-10 text-slate-600 sm:h-12 sm:w-12" /><p className="text-xs text-slate-400 sm:text-base">헨치를 선택하여 믹스 트리를 확인하세요.</p></div></section>
+            <section className="flex flex-1 items-center justify-center rounded-lg border border-dashed border-slate-700 bg-slate-800/30"><div className="px-4 py-8 text-center"><GitBranch className="mx-auto mb-3 h-10 w-10 text-slate-600 sm:h-12 sm:w-12" /><p className="text-xs text-slate-400 sm:text-base">헨치를 선택하여 믹스법v1을 확인하세요.</p></div></section>
           )}
         </main>
 

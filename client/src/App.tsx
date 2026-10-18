@@ -45,9 +45,24 @@ function Router() {
   const isMobile = useIsMobile();
   const { member, logout } = useMembership();
   const [isLoggingOut, setIsLoggingOut] = React.useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = React.useState(() => {
+    try {
+      return localStorage.getItem("abyss-sidebar-collapsed-v1") === "true";
+    } catch {
+      return false;
+    }
+  });
   const isAdminRoute = location === "/admin" || location.startsWith("/admin/");
   const isAdministrator = member?.role === "admin";
   useAntiCapture();
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem("abyss-sidebar-collapsed-v1", String(isSidebarCollapsed));
+    } catch {
+      // 사이드 메뉴 상태 저장을 지원하지 않는 환경에서도 탐색 기능은 사용할 수 있습니다.
+    }
+  }, [isSidebarCollapsed]);
 
   const handleLogout = async () => {
     if (isLoggingOut) return;
@@ -63,10 +78,10 @@ function Router() {
   return (
     <div className="abyss-fantasy-shell flex min-h-screen flex-col md:flex-row">
       {/* 좌측 사이드 네비게이션 - 데스크톱 */}
-      {!isMobile && !isAdminRoute && <SideNavigation currentPath={location} isAdmin={isAdministrator} onLogout={() => void handleLogout()} isLoggingOut={isLoggingOut} />}
+      {!isMobile && !isAdminRoute && <SideNavigation currentPath={location} isAdmin={isAdministrator} onLogout={() => void handleLogout()} isLoggingOut={isLoggingOut} collapsed={isSidebarCollapsed} onToggleCollapsed={() => setIsSidebarCollapsed((collapsed) => !collapsed)} />}
 
       {/* 메인 콘테츠 */}
-      <main className={cn("flex-1 overflow-x-hidden pb-20 md:pb-0", !isAdminRoute && "md:ml-64")}>
+      <main className={cn("min-w-0 flex-1 overflow-x-hidden pb-20 md:pb-0", !isAdminRoute && (isSidebarCollapsed ? "md:ml-20" : "md:ml-64"))}>
         <React.Suspense fallback={<PageLoadingFallback />}>
           <Switch>
             <Route path={"/"} component={MainHome} />

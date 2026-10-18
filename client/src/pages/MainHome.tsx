@@ -40,7 +40,7 @@ const PRIMARY_TOOLS = [
     shortcut: '01',
   },
   {
-    title: '믹스법',
+    title: '믹스법v1',
     subtitle: 'MIX ROUTE',
     description: '목표 헨치의 재료와 단계별 조합 흐름을 빠르게 확인하세요.',
     href: '/tree',
@@ -323,11 +323,11 @@ export default function MainHome() {
                 <div className="inline-flex rounded-lg border border-violet-200/20 bg-violet-300/10 p-2.5 text-violet-100"><Swords className="h-5 w-5" /></div>
                 <p className="mt-5 text-[10px] font-bold tracking-[0.2em] text-violet-200">MIX ROUTE</p>
                 <h2 className="mt-2 text-2xl font-black text-white">재료부터 결과까지, 흐름을 놓치지 마세요.</h2>
-                <p className="mt-3 text-sm leading-6 text-slate-300">믹스법과 역산믹스법으로 원하는 헨치의 앞·뒤 조합을 함께 확인할 수 있습니다.</p>
+                <p className="mt-3 text-sm leading-6 text-slate-300">믹스법v1과 믹스법v2, 역산믹스법으로 원하는 헨치의 조합 계보를 확인할 수 있습니다.</p>
               </div>
               <div className="flex shrink-0 gap-2">
                 <Link href="/tree" className="inline-flex items-center gap-2 rounded-xl bg-violet-200 px-3.5 py-2.5 text-sm font-extrabold text-slate-950 transition hover:bg-white active:scale-[0.97]">
-                  믹스법 <GitBranch className="h-4 w-4" />
+                  믹스법v1 <GitBranch className="h-4 w-4" />
                 </Link>
                 <Link href="/reverse" aria-label="역산믹스법 열기" className="inline-flex items-center justify-center rounded-xl border border-white/15 bg-white/[0.06] p-2.5 text-slate-100 transition hover:bg-white/[0.12] active:scale-[0.97]">
                   <Wand2 className="h-4 w-4" />
